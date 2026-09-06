@@ -29,7 +29,11 @@ func TestCanonicalTeamAAllowAndTeamBDenyBeforeSideEffects(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			claimCalls, backendCalls := 0, 0
-			decision, err := gate.Admit(inputFor(request, test.principal), func(v1alpha1.Decision) error {
+			input := inputFor(request, test.principal)
+			decision, err := gate.Admit(input, func(admission Admission) error {
+				if !admission.Matches(input.RequestRef, input.Action.Project, input.Action.TemplateRef) {
+					t.Fatal("allow continuation received an admission bound to different request context")
+				}
 				claimCalls++
 				backendCalls++
 				return nil
@@ -79,7 +83,7 @@ func TestAuthorizerDefaultsToDenyWithoutPolicyOrExactMatch(t *testing.T) {
 				test.mutate(&input)
 			}
 			calls := 0
-			decision, err := (Gate{Evaluator: test.authorizer}).Admit(input, func(v1alpha1.Decision) error {
+			decision, err := (Gate{Evaluator: test.authorizer}).Admit(input, func(Admission) error {
 				calls++
 				return nil
 			})
@@ -110,7 +114,7 @@ func TestAuthorizerRejectsMissingContext(t *testing.T) {
 			input := base
 			mutate(&input)
 			calls := 0
-			_, err := (Gate{Evaluator: Authorizer{Policies: matchingPolicy(t)}}).Admit(input, func(v1alpha1.Decision) error {
+			_, err := (Gate{Evaluator: Authorizer{Policies: matchingPolicy(t)}}).Admit(input, func(Admission) error {
 				calls++
 				return nil
 			})
@@ -125,9 +129,44 @@ func TestAuthorizerRejectsMissingContext(t *testing.T) {
 func TestGateDoesNotTreatApprovalRequiredAsAllow(t *testing.T) {
 	calls := 0
 	gate := Gate{Evaluator: fixedEvaluator{decision: v1alpha1.Decision{Result: v1alpha1.DecisionResultApprovalRequired}}}
-	decision, err := gate.Admit(Request{}, func(v1alpha1.Decision) error { calls++; return nil })
+	decision, err := gate.Admit(Request{}, func(Admission) error { calls++; return nil })
 	if err != nil || decision.Result != v1alpha1.DecisionResultApprovalRequired || calls != 0 {
 		t.Fatalf("decision/error/calls = %+v/%v/%d", decision, err, calls)
+	}
+}
+
+func TestGateRejectsMalformedAllowBeforeContinuation(t *testing.T) {
+	request := loadRequestFixture(t)
+	input := inputFor(request, loadIssuedFixture(t, "valid-team-a-engineer.json").Principal)
+	valid, err := (Authorizer{Policies: matchingPolicy(t)}).Evaluate(input)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	tests := map[string]struct {
+		path   string
+		mutate func(*v1alpha1.Decision)
+	}{
+		"missing id":          {"decision.id", func(d *v1alpha1.Decision) { d.ID = "" }},
+		"wrong principal":     {"decision.principalRef", func(d *v1alpha1.Decision) { d.PrincipalRef = "user:other" }},
+		"wrong action":        {"decision.action", func(d *v1alpha1.Decision) { d.Action = "claim.delete" }},
+		"missing policy":      {"decision.policyRef", func(d *v1alpha1.Decision) { d.PolicyRef = v1alpha1.PolicyReference{} }},
+		"missing explanation": {"decision.reason", func(d *v1alpha1.Decision) { d.Reason = "" }},
+	}
+	for name, test := range tests {
+		t.Run(name, func(t *testing.T) {
+			decision := valid
+			test.mutate(&decision)
+			calls := 0
+			_, validationErr := (Gate{Evaluator: fixedEvaluator{decision: decision}}).Admit(input, func(Admission) error {
+				calls++
+				return nil
+			})
+			got, ok := validationErr.(*v1alpha1.ValidationError)
+			if !ok || got.FieldPath != test.path || calls != 0 {
+				t.Fatalf("error/calls = %#v/%d, want validation at %q and zero calls", validationErr, calls, test.path)
+			}
+		})
 	}
 }
 

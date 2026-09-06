@@ -32,6 +32,7 @@ In scope:
 - Match principal, project, template, and action using the stable contracts owned by #24 through #26.
 - Return an explicit typed `Allow` or `Deny` decision with the active policy ID/version and a non-empty reason.
 - Put authorization before #28 authority resolution and before any later claim issuance or backend allocation.
+- Issue an internal admission token only from the exact-Allow Gate, bound to the request/project/template context consumed by #28.
 - Prove the canonical Team A allow and Team B pre-claim denial cases using the shared fixtures.
 - Deny when no active policy or no exact rule is available.
 
@@ -49,6 +50,7 @@ Out of scope:
 - Missing policy, missing required authorization context, and unmatched principal/action/project/template return explicit denial or validation failure according to the approved spec; none proceeds to authority resolution.
 - Every completed evaluation returns or records a typed decision containing principal, action, result, policy ID/version when available, and a non-empty evidence-suitable reason.
 - Only `Allow` may proceed to #28; `Deny` and `ApprovalRequired` are never treated as granted authority.
+- A public `Decision{Result: Allow}` cannot be used directly as admission proof; malformed Allow decisions and mismatched admission context fail before the continuation.
 - Claim and backend spies prove zero calls for every denial case.
 - Shared application-facing types remain backend-neutral and no provider-specific type enters the authorization package.
 
