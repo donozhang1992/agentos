@@ -131,7 +131,7 @@ func (g Gate) Admit(input Request, onAllowed func(Admission) error) (v1alpha1.De
 }
 
 func validateAllowedDecision(input Request, decision v1alpha1.Decision) error {
-	if decision.ID == "" {
+	if strings.TrimSpace(decision.ID) == "" {
 		return required("decision.id")
 	}
 	if decision.PrincipalRef != input.Principal.Subject {
@@ -140,10 +140,10 @@ func validateAllowedDecision(input Request, decision v1alpha1.Decision) error {
 	if decision.Action != input.Action.Name {
 		return invalid("decision.action", "must match the admitted action")
 	}
-	if decision.PolicyRef.ID == "" || decision.PolicyRef.Version == "" {
+	if strings.TrimSpace(decision.PolicyRef.ID) == "" || strings.TrimSpace(decision.PolicyRef.Version) == "" {
 		return required("decision.policyRef")
 	}
-	if decision.Reason == "" {
+	if strings.TrimSpace(decision.Reason) == "" {
 		return required("decision.reason")
 	}
 	return nil

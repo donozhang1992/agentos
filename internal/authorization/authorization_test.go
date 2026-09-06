@@ -166,11 +166,14 @@ func TestGateRejectsMalformedAllowBeforeContinuation(t *testing.T) {
 		path   string
 		mutate func(*v1alpha1.Decision)
 	}{
-		"missing id":          {"decision.id", func(d *v1alpha1.Decision) { d.ID = "" }},
-		"wrong principal":     {"decision.principalRef", func(d *v1alpha1.Decision) { d.PrincipalRef = "user:other" }},
-		"wrong action":        {"decision.action", func(d *v1alpha1.Decision) { d.Action = "claim.delete" }},
-		"missing policy":      {"decision.policyRef", func(d *v1alpha1.Decision) { d.PolicyRef = v1alpha1.PolicyReference{} }},
-		"missing explanation": {"decision.reason", func(d *v1alpha1.Decision) { d.Reason = "" }},
+		"missing id":            {"decision.id", func(d *v1alpha1.Decision) { d.ID = "" }},
+		"blank id":              {"decision.id", func(d *v1alpha1.Decision) { d.ID = " \t" }},
+		"wrong principal":       {"decision.principalRef", func(d *v1alpha1.Decision) { d.PrincipalRef = "user:other" }},
+		"wrong action":          {"decision.action", func(d *v1alpha1.Decision) { d.Action = "claim.delete" }},
+		"missing policy":        {"decision.policyRef", func(d *v1alpha1.Decision) { d.PolicyRef = v1alpha1.PolicyReference{} }},
+		"blank policy identity": {"decision.policyRef", func(d *v1alpha1.Decision) { d.PolicyRef.ID = "  " }},
+		"missing explanation":   {"decision.reason", func(d *v1alpha1.Decision) { d.Reason = "" }},
+		"blank explanation":     {"decision.reason", func(d *v1alpha1.Decision) { d.Reason = "\t" }},
 	}
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
