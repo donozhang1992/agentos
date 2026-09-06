@@ -11,14 +11,13 @@ import (
 	"time"
 
 	v1alpha1 "github.com/wunderforge/agenova/api/v1alpha1"
+	"github.com/wunderforge/agenova/internal/authorization"
 )
 
 // Resolve intersects a validated request with a validated AgentTemplate
-// ceiling. It returns a fresh snapshot and never mutates either input.
-func Resolve(request *v1alpha1.ClaimRequest, template *v1alpha1.AgentTemplate, admission v1alpha1.Decision) (*v1alpha1.EffectiveAuthority, *v1alpha1.ValidationError) {
-	if admission.Result != v1alpha1.DecisionResultAllow {
-		return nil, invalid("admission.result", "effective authority requires an Allow decision")
-	}
+// ceiling after the authorization Gate admits that exact request context. It
+// returns a fresh snapshot and never mutates either input.
+func Resolve(request *v1alpha1.ClaimRequest, template *v1alpha1.AgentTemplate, admission authorization.Admission) (*v1alpha1.EffectiveAuthority, *v1alpha1.ValidationError) {
 	if err := v1alpha1.ValidateClaimRequest(request); err != nil {
 		return nil, err
 	}
@@ -27,6 +26,9 @@ func Resolve(request *v1alpha1.ClaimRequest, template *v1alpha1.AgentTemplate, a
 	}
 	if request.Spec.TemplateRef != template.Metadata.Name {
 		return nil, invalid("spec.templateRef", "must match the resolved AgentTemplate")
+	}
+	if !admission.Matches(request.Metadata.Name, request.Spec.ProjectRef, request.Spec.TemplateRef) {
+		return nil, invalid("admission", "must be issued by the authorization Gate for this request, project, and template")
 	}
 
 	ceiling := template.Spec.CapabilityCeiling

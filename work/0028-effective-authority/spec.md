@@ -11,7 +11,7 @@ After #27 admits an assignment, compute the exact authority the future SandboxCl
 
 - Requested tools, resource scopes, model profile, memory scopes, runtime profile, and timeout from ClaimRequest.
 - Capability ceiling and safe defaults from the resolved AgentTemplate, with defaults prohibited from adding unrequested authority.
-- The `Allow` admission result and policy reference from #27.
+- The internal request-bound admission token issued by #27's exact-Allow Gate.
 - One immutable EffectiveAuthority value using the public shape owned by #25.
 - Deterministic narrowing and rejection behavior.
 
@@ -23,7 +23,7 @@ After #27 admits an assignment, compute the exact authority the future SandboxCl
 ## Resolution Contract
 
 ```text
-#27 result must be Allow
+#27 Gate-issued admission bound to this request
         +
 ClaimRequest.requestedAccess/runtime
         intersect
@@ -49,7 +49,7 @@ Omitted access dimensions remain omitted. An empty requested list is valid defau
 
 ## Requirements
 
-- Given any admission result other than `Allow`, when resolution is attempted, then no EffectiveAuthority is returned.
+- Given no Gate-issued admission, or an admission bound to another request/project/template, when resolution is attempted, then no EffectiveAuthority is returned.
 - Given the canonical request and engineer template, when resolution runs, then the resolved dimensions equal the shared Team A issued-state EffectiveAuthority; system-managed authority ID is assigned later during issuance.
 - Given a list with allowed and disallowed values, when resolution runs, then only allowed concrete values survive in request order.
 - Given a non-empty requested list with no allowed value, when resolution runs, then it fails explicitly rather than returning a misleading empty authority.

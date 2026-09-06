@@ -30,7 +30,7 @@ Additional task-specific context:
 
 In scope:
 
-- Require an `Allow` assignment-admission result from #27 before resolution.
+- Require the internal admission token issued by #27's Gate for this exact request/project/template before resolution.
 - Intersect requested tools, concrete resource scopes, model profile, memory scopes, runtime profile, and timeout with the resolved AgentTemplate ceiling and MVP runtime limits.
 - Preserve requested access and effective authority as separate immutable values.
 - Narrow partially over-broad list requests to their allowed subset and cap timeout at the lower allowed maximum.
@@ -46,7 +46,7 @@ Out of scope:
 
 ## Acceptance Criteria
 
-- Resolution is impossible unless #27 returned exactly `Allow`; `Deny` and `ApprovalRequired` produce no EffectiveAuthority.
+- Resolution is impossible without a #27 Gate-issued admission bound to the exact request/project/template; a public or reused Allow decision cannot produce EffectiveAuthority.
 - The canonical Team A request resolves to the concrete authority dimensions shown by the shared issued-state fixture; system-managed authority identity remains part of later issuance.
 - Tools and memory scopes use deterministic exact intersection; output follows request order and contains no duplicates.
 - A requested resource scope must be concrete and survives only when it exactly matches or is contained by an allowed template scope; the concrete requested scope, never a wildcard ceiling, is emitted.
@@ -89,7 +89,7 @@ Out of scope:
 - Preserve `docs/product/architecture-contract.md`.
 - Do not broaden the Ticket or PRD without a recorded human decision.
 - Requested access is intent, not authority; resolution may preserve or reduce it but never add a tool, resource, model, memory scope, runtime profile, or timeout.
-- Consume the public request/template/authority types owned by #23 through #25 and the admission result/policy reference from #27.
+- Consume the public request/template/authority types owned by #23 through #25 and the internal request-bound admission token from #27.
 - Keep this resolver pure: no claim creation, backend allocation, credential retrieval, or evidence persistence.
 
 ## Decisions and Blockers
