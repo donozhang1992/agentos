@@ -43,6 +43,7 @@ The authorizer consumes these contracts. It must not redefine them in a private 
 - Given the canonical Team B principal with the same request context, when no principal-scoped rule matches, then the result is `Deny` and #28 authority resolution is not entered.
 - Given no active PolicyBundle, when authorization is attempted, then the request is denied before authority resolution and the reason identifies unavailable policy.
 - Given an unknown or missing principal/action/project/template, when authorization is attempted, then it cannot produce `Allow` and no side effect occurs.
+- Given any action other than `claim.create`, then assignment admission rejects it before policy matching even if the active bundle contains a rule for that action.
 - Given an exact rule mismatch in any required dimension, when authorization is evaluated, then default-deny applies; partial matching cannot grant authority.
 - Given a completed evaluation, then its decision uses the shared typed result vocabulary and carries the active policy ID/version when one was evaluated plus a non-empty reason suitable for evidence.
 - Given `Deny` or `ApprovalRequired`, then the submission path must not treat it as granted authority or enter #28.

@@ -35,6 +35,7 @@ In scope:
 - Issue an internal admission token only from the exact-Allow Gate, bound to the request/project/template context consumed by #28.
 - Prove the canonical Team A allow and Team B pre-claim denial cases using the shared fixtures.
 - Deny when no active policy or no exact rule is available.
+- Reject every action other than `claim.create` before consulting the assignment policy.
 
 Out of scope:
 

@@ -66,9 +66,6 @@ func TestAuthorizerDefaultsToDenyWithoutPolicyOrExactMatch(t *testing.T) {
 		"unknown team": {authorizer: Authorizer{Policies: matchingPolicy(t)}, mutate: func(in *Request) {
 			in.Principal.Team = "unknown"
 		}},
-		"unknown action": {authorizer: Authorizer{Policies: matchingPolicy(t)}, mutate: func(in *Request) {
-			in.Action.Name = "claim.delete"
-		}},
 		"unknown project": {authorizer: Authorizer{Policies: matchingPolicy(t)}, mutate: func(in *Request) {
 			in.Action.Project = "ledger"
 		}},
@@ -94,6 +91,28 @@ func TestAuthorizerDefaultsToDenyWithoutPolicyOrExactMatch(t *testing.T) {
 				t.Fatalf("decision/calls = %+v/%d, want evidence-ready deny and zero calls", decision, calls)
 			}
 		})
+	}
+}
+
+func TestAuthorizerRejectsNonCreateActionEvenWhenPolicyAllowsIt(t *testing.T) {
+	request := loadRequestFixture(t)
+	input := inputFor(request, loadIssuedFixture(t, "valid-team-a-engineer.json").Principal)
+	input.Action.Name = "claim.delete"
+	loader := &policy.Loader{}
+	if err := loader.Load(policy.PolicyBundle{
+		ID: "reference-default-deny", Version: "1",
+		Rules: []policy.Rule{{Team: input.Principal.Team, Action: "claim.delete", Project: input.Action.Project, TemplateRef: input.Action.TemplateRef}},
+	}); err != nil {
+		t.Fatal(err)
+	}
+	calls := 0
+	_, err := (Gate{Evaluator: Authorizer{Policies: loader}}).Admit(input, func(Admission) error {
+		calls++
+		return nil
+	})
+	validationErr, ok := err.(*v1alpha1.ValidationError)
+	if !ok || validationErr.FieldPath != "action.name" || calls != 0 {
+		t.Fatalf("error/calls = %#v/%d, want action.name validation and zero calls", err, calls)
 	}
 }
 

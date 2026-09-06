@@ -13,6 +13,8 @@ import (
 	"github.com/wunderforge/agenova/internal/policy"
 )
 
+const assignmentCreateAction = "claim.create"
+
 // Request is the trusted, backend-neutral context for assignment admission.
 // Principal is supplied out-of-band; Action is derived from validated request
 // references and does not itself grant authority.
@@ -164,6 +166,9 @@ func validate(input Request) error {
 		if strings.TrimSpace(field.value) == "" {
 			return required(field.path)
 		}
+	}
+	if input.Action.Name != assignmentCreateAction {
+		return invalid("action.name", "assignment admission only accepts claim.create")
 	}
 	return nil
 }
