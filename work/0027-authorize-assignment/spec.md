@@ -16,6 +16,7 @@ This specification elaborates authorization order and observable behavior. It do
 - One active immutable PolicyBundle and exact-match, default-deny evaluation.
 - One typed `Decision` with principal, action, result, policy reference, and reason.
 - One pre-side-effect admission stage that returns its decision to #28 in the same assignment-resolution pipeline.
+- One internal, non-forgeable admission token bound to the exact request/project/template context; #28 consumes this token rather than trusting a caller-constructed public `Decision`.
 - Evidence-ready allow and deny decisions using the shared issued-state fixture vocabulary.
 
 ## Out of Scope
@@ -45,6 +46,7 @@ The authorizer consumes these contracts. It must not redefine them in a private 
 - Given an exact rule mismatch in any required dimension, when authorization is evaluated, then default-deny applies; partial matching cannot grant authority.
 - Given a completed evaluation, then its decision uses the shared typed result vocabulary and carries the active policy ID/version when one was evaluated plus a non-empty reason suitable for evidence.
 - Given `Deny` or `ApprovalRequired`, then the submission path must not treat it as granted authority or enter #28.
+- Given an `Allow`, then only the Gate may issue the internal admission token, and downstream resolution must reject a token reused for another request/project/template.
 - Given pre-claim denial, then evidence is correlated by request and decision without fabricating claim or backend identity.
 
 ## Ordering Boundary

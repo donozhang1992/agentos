@@ -33,6 +33,29 @@ type Evaluator interface {
 	Evaluate(Request) (v1alpha1.Decision, error)
 }
 
+// Admission is an internal capability proving that Gate admitted one exact
+// assignment request. Its binding fields are intentionally private so callers
+// cannot manufacture an Allow token from a public Decision value.
+type Admission struct {
+	request  Request
+	decision v1alpha1.Decision
+}
+
+// Matches reports whether this admission belongs to the request context that
+// a downstream authority resolver is about to process.
+func (a Admission) Matches(requestRef, projectRef, templateRef string) bool {
+	return a.decision.Result == v1alpha1.DecisionResultAllow &&
+		a.request.RequestRef == requestRef &&
+		a.request.Action.Name == "claim.create" &&
+		a.request.Action.Project == projectRef &&
+		a.request.Action.TemplateRef == templateRef
+}
+
+// Decision returns the evidence-ready decision that produced this admission.
+func (a Admission) Decision() v1alpha1.Decision {
+	return a.decision
+}
+
 // Authorizer performs exact-match, default-deny assignment admission.
 type Authorizer struct {
 	Policies BundleSource
@@ -85,7 +108,7 @@ type Gate struct {
 
 // Admit evaluates input and stops all downstream work unless the result is
 // exactly Allow. ApprovalRequired is intentionally not treated as authority.
-func (g Gate) Admit(input Request, onAllowed func(v1alpha1.Decision) error) (v1alpha1.Decision, error) {
+func (g Gate) Admit(input Request, onAllowed func(Admission) error) (v1alpha1.Decision, error) {
 	if g.Evaluator == nil {
 		return v1alpha1.Decision{}, required("evaluator")
 	}
@@ -94,12 +117,34 @@ func (g Gate) Admit(input Request, onAllowed func(v1alpha1.Decision) error) (v1a
 		return decision, err
 	}
 	if onAllowed == nil {
-		return v1alpha1.Decision{}, required("onAllowed")
+		return decision, required("onAllowed")
 	}
-	if err := onAllowed(decision); err != nil {
+	if err := validateAllowedDecision(input, decision); err != nil {
+		return decision, err
+	}
+	if err := onAllowed(Admission{request: input, decision: decision}); err != nil {
 		return decision, err
 	}
 	return decision, nil
+}
+
+func validateAllowedDecision(input Request, decision v1alpha1.Decision) error {
+	if decision.ID == "" {
+		return required("decision.id")
+	}
+	if decision.PrincipalRef != input.Principal.Subject {
+		return invalid("decision.principalRef", "must match the admitted principal")
+	}
+	if decision.Action != input.Action.Name {
+		return invalid("decision.action", "must match the admitted action")
+	}
+	if decision.PolicyRef.ID == "" || decision.PolicyRef.Version == "" {
+		return required("decision.policyRef")
+	}
+	if decision.Reason == "" {
+		return required("decision.reason")
+	}
+	return nil
 }
 
 func validate(input Request) error {
@@ -128,5 +173,13 @@ func required(path string) *v1alpha1.ValidationError {
 		Category:  v1alpha1.ValidationCategoryRequiredField,
 		FieldPath: path,
 		Detail:    "value is required",
+	}
+}
+
+func invalid(path, detail string) *v1alpha1.ValidationError {
+	return &v1alpha1.ValidationError{
+		Category:  v1alpha1.ValidationCategoryInvalidValue,
+		FieldPath: path,
+		Detail:    detail,
 	}
 }
