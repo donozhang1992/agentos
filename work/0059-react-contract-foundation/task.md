@@ -59,13 +59,13 @@ Out of scope:
 ## Execution Todo
 
 - [x] Scout the relevant implementation, tests, risks, and dependencies.
-- [ ] Confirm this packet with the Owner and independent Reviewer before implementation; record approval on #59.
-- [ ] Add minimal React/TypeScript foundation and deterministic canonical binding generation/check.
-- [ ] Implement one typed fixture source and fixture/canonical-validator parity evidence.
-- [ ] Implement the small read-only storyboard with explicit unknown/missing/invalid behavior.
-- [ ] Add adapter/component tests, source substitution test, drift failure proof, and browser smoke with rendered artifacts.
-- [ ] Integrate frontend validation into shared -All and PR/Main gates and provision Node in CI.
-- [ ] Run focused checks and `./scripts/check.ps1 -All`; record exact outputs and fixture IDs.
+- [x] Packet at 3504988 approved by the user in the task; approval recorded on #59 before resuming implementation.
+- [x] Add minimal React/TypeScript foundation and deterministic canonical binding generation/check.
+- [x] Implement one typed fixture source and fixture/canonical-validator parity evidence.
+- [x] Implement the small read-only storyboard with explicit unknown/missing/invalid behavior.
+- [x] Add adapter/component tests, source substitution test, drift failure proof, and browser smoke with rendered artifacts.
+- [x] Integrate frontend validation into shared -All and PR/Main gates and provision Node in CI.
+- [x] Run focused checks and `./scripts/check.ps1 -All`; record exact outputs and fixture IDs.
 - [ ] Review scope and provenance, update contributor commands and relevant implementation evidence, then mark PR ready for independent review. Do not merge.
 
 ## Quality Gates
@@ -76,7 +76,7 @@ Planning-only gates (available now):
 - `./scripts/check.ps1 -All`
 - `git diff --check`
 
-Proposed implementation command contract (not implemented or claimed passing yet):
+Implementation commands:
 
 - `npm --prefix ui ci`
 - `npm --prefix ui run contracts:check` (canonical generation comparison plus fixture parity and negative drift test).
@@ -107,7 +107,7 @@ Proposed implementation command contract (not implemented or claimed passing yet
 - Proposed implementation: Vite/React/TypeScript; deterministic Go-aware binding generation with explicit serialization handling and failure on unsupported shapes. Canonical Go validators act as fixture oracles so frontend validation cannot silently diverge. Tool/library versions will be pinned during approved implementation.
 - #24 and #25 are closed and their canonical types/fixtures exist on the cloned main branch; no external contract blocker remains.
 - No existing #59 packet or approval comment was present at planning start. AGENTS.md and AIDLC require stopping before implementation until the Owner and independent Reviewer approve this packet in #59. Reviewer selection remains with the Owner.
-- This commit is planning only; frontend functionality, test/build scripts and screenshots are intentionally pending that approval.
+- Planning commit 3504988 was approved by the user on 2026-09-08; see [approval record](https://github.com/wunderforge/agenova/issues/59#issuecomment-5580808523). Implementation now follows that approved scope.
 
 ### Planning validation (2026-09-08)
 

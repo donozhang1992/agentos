@@ -48,4 +48,4 @@ Make the existing canonical contract cases executable in a small React storyboar
 
 ## Open Decisions
 
-- Owner and independent Reviewer must approve this consumer behavior and task plan in #59 before implementation. Library pins and internal file layout are routine implementation decisions within the approved boundary.
+- Task + Spec at 3504988 were explicitly approved by the user on 2026-09-08; approval was recorded on #59. No open implementation decision. Canonical Go validation occurs at fixture build time; runtime validation checks display shape only, and later HTTP integration must supply its own trusted validation boundary.

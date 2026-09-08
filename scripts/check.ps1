@@ -23,6 +23,7 @@ foreach ($module in @(
   "architecture.ps1",
   "contracts.ps1",
   "go.ps1",
+  "frontend.ps1",
   "backend.ps1"
 )) {
   . (Join-Path $PSScriptRoot "checks/$module")
@@ -76,6 +77,10 @@ if ($All -or $Docs) {
 
 if ($All -or $Unit) {
   Test-Go -Race:$Race
+}
+
+if ($All) {
+  Test-Frontend
 }
 
 if ($Integration) {
