@@ -200,8 +200,11 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	if os.Args[1] == "fixtures" {
+	if os.Args[1] == "fixtures" || os.Args[1] == "console-fixtures" {
 		rows, err := fixtures(root)
+		if os.Args[1] == "console-fixtures" {
+			rows, err = consoleFixtures(root)
+		}
 		if err != nil {
 			panic(err)
 		}
