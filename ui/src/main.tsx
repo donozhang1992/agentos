@@ -10,7 +10,7 @@ import './style.css';
 import './console.css';
 import { ClaimConsole, ConsoleNavigation } from './ClaimConsole';
 import { parseConsoleRoute } from './console-route';
-import { createConsoleFixtureSource } from './console-fixture-source';
+import { createConsoleFixtureSource, fixtureConsoleKeys } from './console-fixture-source';
 
 const rows = storyboardRows(canonicalRows);
 const source = createFixtureSource(rows);
@@ -28,6 +28,6 @@ function Root() {
   const consoleSource = useMemo(() => createConsoleFixtureSource(consoleRows, parsed.status === 'route' ? parsed.route.scenario : 'canonical'), [parsed]);
   if (location === '/') return <App source={source} selections={selections}/>;
   if (parsed.status === 'malformed-route') return <main className="console"><h1>Claim Console</h1><ConsoleNavigation/><section role="alert"><h2>Malformed console route</h2><p>Use a request-reference or claim-ID console route. No fixture was selected.</p></section></main>;
-  return <ClaimConsole source={consoleSource} route={parsed.route}/>;
+  return <ClaimConsole source={consoleSource} route={parsed.route} keys={fixtureConsoleKeys}/>;
 }
 createRoot(document.getElementById('root')!).render(<StrictMode><Root/></StrictMode>);

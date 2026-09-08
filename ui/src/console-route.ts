@@ -22,6 +22,3 @@ export function parseConsoleRoute(pathname: string, search: string): RouteResult
 export function consoleHref(kind: ConsoleRoute['kind'], reference: string, scenario: Scenario = 'canonical') {
   return `/console/${kind}/${encodeURIComponent(reference)}${scenario === 'canonical' ? '' : `?scenario=${scenario}`}`;
 }
-// Opaque keys for the injected fixture source, not HTTP paths.
-export const issuedKey = (route: ConsoleRoute) => `${route.kind}:${route.reference}`;
-export const requestKey = (reference: string) => `request-document:${reference}`;

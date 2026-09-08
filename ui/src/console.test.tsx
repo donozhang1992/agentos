@@ -3,13 +3,16 @@
 import { afterEach, describe, expect, it } from 'vitest';
 import { cleanup, render, screen, waitFor, act } from '@testing-library/react';
 import rows from 'virtual:agenova-console-fixtures';
-import { createConsoleFixtureSource } from './console-fixture-source';
+import { createConsoleFixtureSource, fixtureConsoleKeys } from './console-fixture-source';
 import { consoleHref, parseConsoleRoute, type ConsoleRoute, type Scenario } from './console-route';
-import { loadConsole } from './console-load';
-import { ClaimConsole, ConsolePanel } from './ClaimConsole';
+import { loadConsole as resolveConsole } from './console-load';
+import { ClaimConsole as ConsolePage, ConsolePanel as Panel } from './ClaimConsole';
 import type { EvidenceResult, EvidenceSource } from './evidence-source';
 
 afterEach(cleanup);
+const loadConsole = (source: EvidenceSource, route: ConsoleRoute) => resolveConsole(source, route, fixtureConsoleKeys);
+const ClaimConsole = (props: { source: EvidenceSource; route: ConsoleRoute }) => <ConsolePage {...props} keys={fixtureConsoleKeys}/>;
+const ConsolePanel = (props: { source: EvidenceSource; route: ConsoleRoute }) => <Panel {...props} keys={fixtureConsoleKeys}/>;
 const route: ConsoleRoute = { kind: 'requests', reference: 'fix-payment-timeout', scenario: 'canonical' };
 const source = createConsoleFixtureSource(rows, 'canonical');
 
@@ -50,6 +53,22 @@ describe('presentation routes and fixture references', () => {
 });
 
 describe('correlation and source boundary', () => {
+  it('replaces fixture keys with unrelated opaque keys through injected resolution', async () => {
+    const issued = await source.load('requests:fix-payment-timeout');
+    const request = await source.load('request-document:fix-payment-timeout');
+    const observed: string[] = [];
+    const replacement: EvidenceSource = { async load(key) {
+      observed.push(key);
+      if (key === 'opaque-A') return issued;
+      if (key === 'opaque-B') return request;
+      throw new Error('fixture key escaped into replacement source');
+    } };
+    const keys = { issued: () => 'opaque-A', request: () => 'opaque-B' };
+    render(<ConsolePage source={replacement} keys={keys} route={route}/>);
+    expect(await screen.findByText('Allow', { exact: true })).toBeTruthy();
+    expect(screen.getAllByText('Same recorded access')).toHaveLength(4);
+    expect(observed).toEqual(['opaque-A', 'opaque-B']);
+  });
   it.each(['name', 'template'])('withholds request comparison for mismatched %s', async kind => {
     const replacement: EvidenceSource = { async load(key) {
       const result = await source.load(key);

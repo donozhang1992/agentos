@@ -3,7 +3,7 @@
 import { useEffect, useState, type MouseEvent } from 'react';
 import type { ClaimRequestedAccess, EffectiveAuthority } from './contracts.generated';
 import type { EvidenceSource } from './evidence-source';
-import { loadConsole, type ConsoleResult } from './console-load';
+import { loadConsole, type ConsoleResult, type ConsoleReferenceKeys } from './console-load';
 import { consoleHref, scenarios, type ConsoleRoute } from './console-route';
 
 export function navigate(href: string) {
@@ -94,20 +94,20 @@ export function ConsoleEvidence({ result }: { result: ConsoleResult }) {
   </div>;
 }
 
-export function ConsolePanel({ source, route }: { source: EvidenceSource; route: ConsoleRoute }) {
-  const [loaded, setLoaded] = useState<{ route: ConsoleRoute; source: EvidenceSource; result: ConsoleResult }>();
+export function ConsolePanel({ source, route, keys }: { source: EvidenceSource; route: ConsoleRoute; keys: ConsoleReferenceKeys }) {
+  const [loaded, setLoaded] = useState<{ route: ConsoleRoute; source: EvidenceSource; keys: ConsoleReferenceKeys; result: ConsoleResult }>();
   useEffect(() => {
     let active = true;
-    loadConsole(source, route).then(result => { if (active) setLoaded({ route, source, result }); });
+    loadConsole(source, route, keys).then(result => { if (active) setLoaded({ route, source, keys, result }); });
     return () => { active = false; };
-  }, [source, route]);
-  return <div aria-live="polite" aria-busy={!loaded || loaded.route !== route || loaded.source !== source}>
-    {loaded && loaded.route === route && loaded.source === source ? <ConsoleEvidence result={loaded.result}/>
+  }, [source, route, keys]);
+  return <div aria-live="polite" aria-busy={!loaded || loaded.route !== route || loaded.source !== source || loaded.keys !== keys}>
+    {loaded && loaded.route === route && loaded.source === source && loaded.keys === keys ? <ConsoleEvidence result={loaded.result}/>
       : <section role="status"><h2>Loading evidence</h2><p>Waiting for this fixture source. No previous claim is displayed.</p></section>}
   </div>;
 }
 
-export function ClaimConsole({ source, route }: { source: EvidenceSource; route: ConsoleRoute }) {
+export function ClaimConsole({ source, route, keys }: { source: EvidenceSource; route: ConsoleRoute; keys: ConsoleReferenceKeys }) {
   return <><a className="skip-link" href="#console-main">Skip to claim evidence</a><main id="console-main" className="console" tabIndex={-1}>
     <header><p className="eyebrow">AGENOVA / SINGLE CLAIM / FIXTURE STAGE</p><h1>Claim Console</h1>
       <p>Inspect one assignment: intent, decision, authority and recorded execution.</p></header>
@@ -121,7 +121,7 @@ export function ClaimConsole({ source, route }: { source: EvidenceSource; route:
         : route.scenario === 'canonical' ? <p className="note">Canonical fixture evidence. No live connection.</p>
         : <p className="console-notice">Simulated fixture-source state: {route.scenario}. No live API behavior is claimed.</p>}
     </div>
-    <ConsolePanel source={source} route={route}/>
+    <ConsolePanel source={source} route={route} keys={keys}/>
     <footer>Fixture-driven portion only. Live evidence, polling and API/CLI equality remain blocked on #38/#68.</footer>
   </main></>;
 }

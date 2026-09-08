@@ -28,6 +28,12 @@ resolve through the fixture EvidenceSource. The page compares request/issued
 values only after reference and template correlation; the Team B snapshot has
 no matching request document and says so explicitly.
 
+The composition root also injects `ConsoleReferenceKeys`, which maps references
+to the source's opaque keys for issued state and request documents. Fixture
+prefixes live only in the fixture adapter; a replacement source supplies its
+own mapping. A component test replaces both keys with unrelated opaque values.
+This resolver is local presentation configuration, not an HTTP or evidence DTO.
+
 The `narrowed` scenario removes `github.pull-request` from Team A's effective
 tools in memory and revalidates with the canonical Go system parser. It is
 visibly labeled as derived, not executed policy evidence. Source-state scenarios

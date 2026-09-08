@@ -3,7 +3,13 @@
 import { createFixtureSource, type FixtureRow } from './fixture-source';
 import type { EvidenceResult, EvidenceSource } from './evidence-source';
 import type { Scenario } from './console-route';
-import { requestKey } from './console-route';
+import type { ConsoleReferenceKeys } from './console-load';
+
+// Fixture-only key convention stays in the adapter and is injected at composition.
+export const fixtureConsoleKeys: ConsoleReferenceKeys = {
+  issued: route => `${route.kind}:${route.reference}`,
+  request: reference => `request-document:${reference}`,
+};
 
 export function createConsoleFixtureSource(rows: readonly FixtureRow[], scenario: Scenario): EvidenceSource {
   const base = createFixtureSource(rows);
@@ -12,7 +18,7 @@ export function createConsoleFixtureSource(rows: readonly FixtureRow[], scenario
       if (row.derivedFrom && !(scenario === 'narrowed' && row.id === 'derived.console.narrowed')) continue;
       if (scenario === 'narrowed' && row.subject === 'IssuedState' && !row.derivedFrom) continue;
       const result = await base.load(row.id);
-      if (result.status === 'request' && key === requestKey(result.data.metadata.name)) return result;
+      if (result.status === 'request' && key === fixtureConsoleKeys.request(result.data.metadata.name)) return result;
       if (result.status !== 'issued') continue;
       const state = result.data;
       if (key !== `requests:${state.requestRef}` && (!state.claim || key !== `claims:${state.claim.id}`)) continue;

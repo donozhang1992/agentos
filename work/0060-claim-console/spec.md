@@ -39,6 +39,7 @@ Present one governed assignment as a readable story using the already accepted c
 ## Compatibility
 
 - Reuse #59 EvidenceSource and generated ClaimRequest/IssuedState types. Any UI-local pairing/provenance structure is non-serialized composition only; it is not an API/evidence contract.
+- Inject reference-to-source-key resolution with `ConsoleReferenceKeys`; only the fixture adapter owns fixture prefixes. Replacement sources can use unrelated opaque keys without changing console semantics. Browser back/forward assertions complement reload evidence.
 - The old fixture storyboard and its tests remain useful regression coverage. Console presentation may reuse components without changing their underlying semantics.
 - Canonical parsers validate positive derived domain data before the fixture source exposes it. Invalid display cases remain sanitized diagnostics.
 - Route syntax and fixture scenario transport are presentation details only. #38 and #68 determine the later real evidence/HTTP semantics.
