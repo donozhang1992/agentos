@@ -131,3 +131,11 @@ After approval, staged implementation:
 - `./scripts/check.ps1 -Docs`: PASS, all documentation, metadata, architecture, links, boundaries and delivery-contract checks.
 - `git diff --check`: PASS. Planning delta contains only this Task + Spec; no executable source changes.
 - #60-specific frontend gates and screenshots: not run/not produced; construction awaits independent planning approval. #59 evidence remains provenance for the base, not proof of this staged console.
+
+### Staged implementation evidence (2026-09-08)
+
+- Implementation: `729cd90`. [Exact outputs, derivations, commands and 14 screenshots](../../docs/evidence/60/console/summary.md).
+- Local `./scripts/check.ps1 -All` passed: 13 Go packages, contract generation/parity plus canonical narrowing validation, 71 frontend tests, production build, and 23 browser checks (16 new console + 7 base regressions).
+- Console routes are client-only. Source keys remain opaque transport selections; composition retains generated request/issued objects and validates reference/template correlation before comparing access. No live contract or polling was added.
+- Narrowing removes only `github.pull-request` from the effective tools of a cloned canonical Team A snapshot and passes canonical Go validation. Source failures are deterministic labeled simulations. Team B request data remains unavailable.
+- The staged fixture portion is implemented. Full #60 remains blocked by #38/#68, live HTTP/polling, terminal progression/revocation evidence, real-API E2E and CLI equality. No issue closure or merge is authorized.

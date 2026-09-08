@@ -1,0 +1,191 @@
+[pass] current documentation and harness files exist; retired paths are absent
+[pass] open-source license, attribution, source headers, and module path are consistent
+[pass] product authorities, AIDLC routing, and task-packet structure are present
+[pass] local Markdown links resolve
+[pass] backend-specific Agent Sandbox shape stays inside its adapter
+[pass] command behavior and shared contracts stay provider-neutral
+Created task packet: C:\Users\dapen\.codex\worktrees\ca2f\bootcamp\aie_projects\sandboxes\agentos\agenova\.tmp\task-scaffold-contract\9999-contract-check
+Read the linked Issue, replace every TODO marker, and stop for Owner/Reviewer approval before implementation.
+[pass] issue, task-packet, PR, and evidence delivery contracts are mechanically validated
+[pass] current Go files are formatted
+warning: in the working copy of 'go.mod', LF will be replaced by CRLF the next time Git touches it
+[pass] Go module metadata is tidy
+[pass] go vet ./...
+ok  	github.com/wunderforge/agenova/api/v1alpha1	0.124s
+ok  	github.com/wunderforge/agenova/cmd/agenova	3.376s
+ok  	github.com/wunderforge/agenova/harness/e2e	0.075s
+ok  	github.com/wunderforge/agenova/harness/fixtures/contract/v0	0.847s
+ok  	github.com/wunderforge/agenova/internal/app	0.153s
+ok  	github.com/wunderforge/agenova/internal/cli	0.165s
+ok  	github.com/wunderforge/agenova/internal/facts	0.218s
+ok  	github.com/wunderforge/agenova/internal/governance	0.278s
+ok  	github.com/wunderforge/agenova/internal/modelgateway	0.062s
+ok  	github.com/wunderforge/agenova/internal/operator	0.256s
+?   	github.com/wunderforge/agenova/internal/runtime	[no test files]
+ok  	github.com/wunderforge/agenova/internal/runtime/agentsandbox	0.250s
+?   	github.com/wunderforge/agenova/internal/runtime/contracttest	[no test files]
+?   	github.com/wunderforge/agenova/internal/sandbox	[no test files]
+ok  	github.com/wunderforge/agenova/internal/toolgateway	0.255s
+ok  	github.com/wunderforge/agenova/ui/contractgen	0.098s
+[pass] go test ./...
+ok  	github.com/wunderforge/agenova/harness/integration/agentsandbox	(cached) [no tests to run]
+[pass] Agent Sandbox integration package compiles
+
+> @agenova/fixture-storyboard@0.0.0 check
+> npm run contracts:check && npm run typecheck && npm test -- --run && npm run build && npm run test:smoke
+
+
+> @agenova/fixture-storyboard@0.0.0 contracts:check
+> node scripts/contracts.mjs check && vitest run src/fixture-source.test.ts
+
+=== RUN   TestConsoleNarrowing
+--- PASS: TestConsoleNarrowing (0.01s)
+=== RUN   TestCanonicalFixtures
+=== RUN   TestCanonicalFixtures/claim-request.valid.team-a-engineer-json
+=== RUN   TestCanonicalFixtures/claim-request.valid.team-a-engineer-yaml
+=== RUN   TestCanonicalFixtures/claim-request.invalid.missing-template
+=== RUN   TestCanonicalFixtures/claim-request.invalid.missing-task
+=== RUN   TestCanonicalFixtures/claim-request.invalid.missing-runtime
+=== RUN   TestCanonicalFixtures/claim-request.invalid.self-asserted-principal
+=== RUN   TestCanonicalFixtures/claim-request.invalid.secret-value
+=== RUN   TestCanonicalFixtures/issued-state.valid.team-a-engineer
+=== RUN   TestCanonicalFixtures/issued-state.valid.team-b-denial
+=== RUN   TestCanonicalFixtures/issued-state.invalid.caller-effective-authority
+=== RUN   TestCanonicalFixtures/issued-state.invalid.caller-claim-phase
+=== RUN   TestCanonicalFixtures/issued-state.invalid.caller-backend-identity
+--- PASS: TestCanonicalFixtures (0.00s)
+    --- PASS: TestCanonicalFixtures/claim-request.valid.team-a-engineer-json (0.00s)
+    --- PASS: TestCanonicalFixtures/claim-request.valid.team-a-engineer-yaml (0.00s)
+    --- PASS: TestCanonicalFixtures/claim-request.invalid.missing-template (0.00s)
+    --- PASS: TestCanonicalFixtures/claim-request.invalid.missing-task (0.00s)
+    --- PASS: TestCanonicalFixtures/claim-request.invalid.missing-runtime (0.00s)
+    --- PASS: TestCanonicalFixtures/claim-request.invalid.self-asserted-principal (0.00s)
+    --- PASS: TestCanonicalFixtures/claim-request.invalid.secret-value (0.00s)
+    --- PASS: TestCanonicalFixtures/issued-state.valid.team-a-engineer (0.00s)
+    --- PASS: TestCanonicalFixtures/issued-state.valid.team-b-denial (0.00s)
+    --- PASS: TestCanonicalFixtures/issued-state.invalid.caller-effective-authority (0.00s)
+    --- PASS: TestCanonicalFixtures/issued-state.invalid.caller-claim-phase (0.00s)
+    --- PASS: TestCanonicalFixtures/issued-state.invalid.caller-backend-identity (0.00s)
+=== RUN   TestBindingsTrackEnumsAndDuration
+--- PASS: TestBindingsTrackEnumsAndDuration (0.01s)
+PASS
+ok  	github.com/wunderforge/agenova/ui/contractgen	0.055s
+
+[pass] deliberate requestRef binding drift rejected
+[pass] unchanged canonical bindings still pass
+
+ RUN  v5.0.0 C:/Users/dapen/.codex/worktrees/ca2f/bootcamp/aie_projects/sandboxes/agentos/agenova/ui
+
+
+ Test Files  1 passed (1)
+      Tests  22 passed (22)
+   Start at  19:35:21
+   Duration  2.73s (environment 71%, transform 28%, import 1%)
+
+
+> @agenova/fixture-storyboard@0.0.0 typecheck
+> tsc --noEmit
+
+
+> @agenova/fixture-storyboard@0.0.0 test
+> vitest --run
+
+
+ RUN  v5.0.0 C:/Users/dapen/.codex/worktrees/ca2f/bootcamp/aie_projects/sandboxes/agentos/agenova/ui
+
+
+ Test Files  3 passed (3)
+      Tests  71 passed (71)
+   Start at  19:35:27
+   Duration  4.45s (environment 52%, transform 30%, tests 10%, import 7%)
+
+  Transform  transforming modules took 3.56s · 30% of tracked time, re-done on every run
+             persist transforms across runs with fsModuleCache: true
+             learn more: https://vitest.dev/guide/improving-performance#caching-between-reruns
+
+
+> @agenova/fixture-storyboard@0.0.0 build
+> node scripts/contracts.mjs check && tsc --noEmit && vite build
+
+=== RUN   TestConsoleNarrowing
+--- PASS: TestConsoleNarrowing (0.01s)
+=== RUN   TestCanonicalFixtures
+=== RUN   TestCanonicalFixtures/claim-request.valid.team-a-engineer-json
+=== RUN   TestCanonicalFixtures/claim-request.valid.team-a-engineer-yaml
+=== RUN   TestCanonicalFixtures/claim-request.invalid.missing-template
+=== RUN   TestCanonicalFixtures/claim-request.invalid.missing-task
+=== RUN   TestCanonicalFixtures/claim-request.invalid.missing-runtime
+=== RUN   TestCanonicalFixtures/claim-request.invalid.self-asserted-principal
+=== RUN   TestCanonicalFixtures/claim-request.invalid.secret-value
+=== RUN   TestCanonicalFixtures/issued-state.valid.team-a-engineer
+=== RUN   TestCanonicalFixtures/issued-state.valid.team-b-denial
+=== RUN   TestCanonicalFixtures/issued-state.invalid.caller-effective-authority
+=== RUN   TestCanonicalFixtures/issued-state.invalid.caller-claim-phase
+=== RUN   TestCanonicalFixtures/issued-state.invalid.caller-backend-identity
+--- PASS: TestCanonicalFixtures (0.00s)
+    --- PASS: TestCanonicalFixtures/claim-request.valid.team-a-engineer-json (0.00s)
+    --- PASS: TestCanonicalFixtures/claim-request.valid.team-a-engineer-yaml (0.00s)
+    --- PASS: TestCanonicalFixtures/claim-request.invalid.missing-template (0.00s)
+    --- PASS: TestCanonicalFixtures/claim-request.invalid.missing-task (0.00s)
+    --- PASS: TestCanonicalFixtures/claim-request.invalid.missing-runtime (0.00s)
+    --- PASS: TestCanonicalFixtures/claim-request.invalid.self-asserted-principal (0.00s)
+    --- PASS: TestCanonicalFixtures/claim-request.invalid.secret-value (0.00s)
+    --- PASS: TestCanonicalFixtures/issued-state.valid.team-a-engineer (0.00s)
+    --- PASS: TestCanonicalFixtures/issued-state.valid.team-b-denial (0.00s)
+    --- PASS: TestCanonicalFixtures/issued-state.invalid.caller-effective-authority (0.00s)
+    --- PASS: TestCanonicalFixtures/issued-state.invalid.caller-claim-phase (0.00s)
+    --- PASS: TestCanonicalFixtures/issued-state.invalid.caller-backend-identity (0.00s)
+=== RUN   TestBindingsTrackEnumsAndDuration
+--- PASS: TestBindingsTrackEnumsAndDuration (0.01s)
+PASS
+ok  	github.com/wunderforge/agenova/ui/contractgen	0.055s
+
+[pass] deliberate requestRef binding drift rejected
+[pass] unchanged canonical bindings still pass
+vite v8.2.2 building client environment for production...
+transforming...
+✓ 26 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/index.html                   0.37 kB │ gzip:  0.27 kB
+dist/assets/index-DjOwMEl2.css    2.45 kB │ gzip:  1.00 kB
+dist/assets/index-Bq63K91V.js   228.58 kB │ gzip: 67.10 kB
+
+✓ built in 1.31s
+
+> @agenova/fixture-storyboard@0.0.0 test:smoke
+> playwright test
+
+
+Running 23 tests using 2 workers
+
+(node:28984) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:33728) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ok  1 smoke\storyboard.spec.ts:14:3 › request-only: claim-request.valid.team-a-engineer-json (634ms)
+  ok  2 smoke\console.spec.ts:18:5 › console 1100 allowed (799ms)
+  ok  3 smoke\storyboard.spec.ts:14:3 › allow-running: issued-state.valid.team-a-engineer (414ms)
+  ok  4 smoke\console.spec.ts:18:5 › console 1100 narrowed (529ms)
+  ok  5 smoke\storyboard.spec.ts:14:3 › deny-no-claim: issued-state.valid.team-b-denial (414ms)
+  ok  6 smoke\console.spec.ts:18:5 › console 1100 denied (514ms)
+  ok  7 smoke\storyboard.spec.ts:14:3 › invalid-caller-state: issued-state.invalid.caller-effective-authority (362ms)
+  ok  8 smoke\console.spec.ts:18:5 › console 1100 loading (382ms)
+  ok  9 smoke\storyboard.spec.ts:14:3 › missing-field: derived.missing-field (370ms)
+  ok 10 smoke\console.spec.ts:18:5 › console 1100 not-found (345ms)
+  ok 11 smoke\storyboard.spec.ts:14:3 › unknown-field: derived.unknown-field (338ms)
+  ok 13 smoke\storyboard.spec.ts:37:1 › mobile selection stays usable without horizontal overflow (293ms)
+  ok 12 smoke\console.spec.ts:18:5 › console 1100 malformed (378ms)
+  ok 14 smoke\console.spec.ts:18:5 › console 1100 unavailable (338ms)
+  ok 15 smoke\console.spec.ts:18:5 › console 390 allowed (392ms)
+  ok 16 smoke\console.spec.ts:18:5 › console 390 narrowed (407ms)
+  ok 17 smoke\console.spec.ts:18:5 › console 390 denied (361ms)
+  ok 18 smoke\console.spec.ts:18:5 › console 390 loading (272ms)
+  ok 19 smoke\console.spec.ts:18:5 › console 390 not-found (276ms)
+  ok 20 smoke\console.spec.ts:18:5 › console 390 malformed (285ms)
+  ok 21 smoke\console.spec.ts:18:5 › console 390 unavailable (271ms)
+  ok 22 smoke\console.spec.ts:57:1 › console direct claim route, reload, navigation and browser history (457ms)
+  ok 23 smoke\console.spec.ts:74:1 › console keyboard, focus, semantic structure and source announcements (417ms)
+
+  23 passed (8.1s)
+[pass] frontend contracts, types, components, production build and browser smoke
