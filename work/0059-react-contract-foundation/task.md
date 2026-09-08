@@ -66,7 +66,7 @@ Out of scope:
 - [x] Add adapter/component tests, source substitution test, drift failure proof, and browser smoke with rendered artifacts.
 - [x] Integrate frontend validation into shared -All and PR/Main gates and provision Node in CI.
 - [x] Run focused checks and `./scripts/check.ps1 -All`; record exact outputs and fixture IDs.
-- [ ] Review scope and provenance, update contributor commands and relevant implementation evidence, then mark PR ready for independent review. Do not merge.
+- [x] Review scope and provenance; contributor commands and exact implementation evidence are prepared for PR review. Do not merge.
 
 ## Quality Gates
 
@@ -116,3 +116,12 @@ Implementation commands:
 - `./scripts/check.ps1 -All`: passed docs, gofmt, module consistency, `go vet ./...`, `go test -count=1 ./...` (12 tested packages), and `go test -run '^$' -tags integration ./harness/integration/agentsandbox/` (compile only; no real backend test).
 - `git diff --check`: passed. The baseline's line-ending-only go.mod rewrite was restored; no dependency changes are part of planning.
 - Frontend checks/rendered proof: not run because implementation is gated by packet approval. These baseline results do not prove #59's frontend acceptance criteria.
+
+### Accepted implementation and evidence (2026-09-08)
+
+- Implementation commit: `93ebbeb`. [Exact results, full fixture matrix, raw output and six screenshots](../../docs/evidence/59/frontend/summary.md).
+- Canonical types and fixtures are unchanged. The v0-only Go generator emits bindings and runtime shape metadata; a build-time fixture adapter invokes the canonical validators and emits only normalized valid data or sanitized diagnostics. No semantic/policy validator was duplicated in TypeScript.
+- Clean `npm ci`, all 40 adapter/component tests, 7 browser tests, drift failure proof, TypeScript and production build passed. `./scripts/check.ps1 -All` passed including 13 Go test packages and the shared frontend gate.
+- The fixture source takes canonical-parser output at build time; future HTTP integration must supply a trusted semantic boundary. Only the two existing issued positive fixture states are claimed. No real backend, live endpoint or race run was performed locally.
+- Windows preview teardown uses the Vite API directly after shell process-tree teardown stalled; the accepted browser command exits cleanly.
+- No implementation blocker remains. Final independent review and merge remain human decisions; this task does not merge.
