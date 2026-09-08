@@ -102,4 +102,5 @@ After implementation is unblocked:
 - The Owner authorized the overall direction and publishing this draft planning PR. That does not constitute the independent planning approval required by AIDLC.
 - **Implementation is blocked on the final #30 RuntimeBackend implementation being merged AND Owner/independent Reviewer approval recorded in #89.** Automatic Codex review is advisory and cannot supply human approval.
 - Owner decisions: confirm the exact outside-boundary rule, pre-termination output export/no workspace retention, and the compatibility/evidence split described in the spec. Name an independent Reviewer and record the decision in #89.
+- Planning review correction: use independent-claim isolation rather than parent/child lineage, and do not imply that Agenova already has a generic artifact-output API. The integration must select an approved governed operation; the collector remains test-only.
 - The requested `docs/aidlc.md` does not exist at this baseline; `docs/development/AIDLC.md` is the canonical workflow linked by AGENTS.md.
