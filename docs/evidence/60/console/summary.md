@@ -3,7 +3,7 @@
 - Date: 2026-09-08
 - Branch: `codex/0060-claim-console`, stacked on #108 at `4954efe`.
 - Approved planning packet: `0eb707b`; [independent approval](https://github.com/wunderforge/agenova/issues/60#issuecomment-5582660832).
-- Implementation: `729cd90`; subsequent evidence commit contains documentation/artifacts only.
+- Implementation: `729cd90` plus source-resolution fix `0ef9ea3`; subsequent evidence commit contains documentation/artifacts only.
 - Gate: `./scripts/check.ps1 -All`, PASS (exit 0). [Raw output](output.txt).
 - Environment: Windows, Go 1.26.4, Node 24.11.1, npm 11.6.2, Playwright 1.63.0 / Chromium 153.0.8010.12. No package/lockfile changes from #59.
 - Scope: fixture-driven portion only. #60 is not complete; #38/#68 remain blockers.
@@ -12,18 +12,18 @@
 
 | Command | Result |
 | --- | --- |
-| `npm --prefix ui test -- --run src/console.test.tsx` | PASS; 31 console route/source/component tests |
+| `npm --prefix ui test -- --run src/console.test.tsx` | PASS; 32 console route/source/component tests |
 | `npm --prefix ui run test:smoke -- console.spec.ts` | PASS; 16 console browser checks |
 | `npm --prefix ui run contracts:check` | PASS; canonical 12-case parity, stale-binding rejection, enum drift, new Go narrowing validation and 22 base fixture/shape tests |
 | `npm --prefix ui run typecheck` | PASS |
-| `npm --prefix ui test -- --run` | PASS; 71 tests in 3 files, including all 40 #59 tests |
-| `npm --prefix ui run build` | PASS; 26 modules, JS 228.58 kB / 67.10 kB gzip |
+| `npm --prefix ui test -- --run` | PASS; 72 tests in 3 files, including all 40 #59 tests |
+| `npm --prefix ui run build` | PASS; 26 modules, JS 228.69 kB / 67.18 kB gzip |
 | `npm --prefix ui run test:smoke` | PASS; 23 tests, including all 7 #59 smoke checks |
 | `./scripts/check.ps1 -All` | PASS; 13 Go packages, vet/module/gofmt/docs/boundaries, integration-package compilation, complete frontend gate |
 | `git diff --exit-code 0eb707b -- api/v1alpha1 harness/fixtures/contract/v0 ui/src/contracts.generated.ts` | PASS; canonical types, fixture payloads and generated bindings unchanged |
 | `git diff --cached --check` | PASS |
 
-Focused runs preceded the final full baseline; `output.txt` records the accepted full run after the mobile column readability adjustment. The temporary stacked PR base does not trigger the main-targeted PR workflow. Any manually dispatched Linux run is reported in the PR separately, without changing the stack or claiming a live-API test.
+Focused runs preceded the final full baseline; `output.txt` records the accepted full run after the injected source-resolution fix. The temporary stacked PR base does not trigger the main-targeted PR workflow. Any manually dispatched Linux run is reported in the PR separately, without changing the stack or claiming a live-API test.
 
 ## Reproduce
 
@@ -71,3 +71,7 @@ The narrowing, denial and malformed views were visually inspected. Executable ch
 - Current fixtures provide no detailed per-call decisions/results, agent outcome or revocation proof. The console labels these as not supplied; it does not synthesize them from Running or backend identity.
 - No HTTP contract, live endpoint, lineage, multi-agent UI or mutation control was added. Existing Go integration compilation is not real backend execution evidence.
 - PR #111 remains stacked on #108 and unmerged. The passing fixture gate does not satisfy the full #60 Definition of Done.
+
+## Review follow-up
+
+The P1 source-replacement finding is addressed by injecting reference-to-opaque-key resolution alongside EvidenceSource. Fixture key conventions now live only in the fixture adapter; an additional component test renders through unrelated opaque keys. The P2 history evidence is covered by browser back/forward assertions in console.spec.ts.

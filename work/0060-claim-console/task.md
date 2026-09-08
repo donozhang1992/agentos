@@ -79,7 +79,7 @@ Full #60 acceptance still blocked:
 - [x] Add canonical-parser-validated derived narrowing and deterministic source-status scenarios without copied fixture payloads.
 - [x] Add component, route, reference-correlation, keyboard, viewport and browser screenshot evidence.
 - [x] Run focused commands and `./scripts/check.ps1 -All`; record exact outputs and fixture/derivation identities.
-- [ ] Push only #60 changes to the stacked PR, request `@codex review`, and report the implemented subset plus live blockers. Do not merge or close #60.
+- [x] Push only #60 changes to the stacked PR, request `@codex review`, and report the implemented subset plus live blockers. Do not merge or close #60.
 
 ## Quality Gates
 
@@ -134,8 +134,8 @@ After approval, staged implementation:
 
 ### Staged implementation evidence (2026-09-08)
 
-- Implementation: `729cd90`. [Exact outputs, derivations, commands and 14 screenshots](../../docs/evidence/60/console/summary.md).
-- Local `./scripts/check.ps1 -All` passed: 13 Go packages, contract generation/parity plus canonical narrowing validation, 71 frontend tests, production build, and 23 browser checks (16 new console + 7 base regressions).
+- Implementation: `729cd90` plus source-resolution fix `0ef9ea3`. [Exact outputs, derivations, commands and 14 screenshots](../../docs/evidence/60/console/summary.md).
+- Local `./scripts/check.ps1 -All` passed: 13 Go packages, contract generation/parity plus canonical narrowing validation, 72 frontend tests, production build, and 23 browser checks (16 new console + 7 base regressions).
 - Console routes are client-only. Source keys remain opaque transport selections; composition retains generated request/issued objects and validates reference/template correlation before comparing access. No live contract or polling was added.
 - Narrowing removes only `github.pull-request` from the effective tools of a cloned canonical Team A snapshot and passes canonical Go validation. Source failures are deterministic labeled simulations. Team B request data remains unavailable.
 - The staged fixture portion is implemented. Full #60 remains blocked by #38/#68, live HTTP/polling, terminal progression/revocation evidence, real-API E2E and CLI equality. No issue closure or merge is authorized.

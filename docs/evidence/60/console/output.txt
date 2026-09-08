@@ -11,22 +11,22 @@ Read the linked Issue, replace every TODO marker, and stop for Owner/Reviewer ap
 warning: in the working copy of 'go.mod', LF will be replaced by CRLF the next time Git touches it
 [pass] Go module metadata is tidy
 [pass] go vet ./...
-ok  	github.com/wunderforge/agenova/api/v1alpha1	0.124s
-ok  	github.com/wunderforge/agenova/cmd/agenova	3.376s
-ok  	github.com/wunderforge/agenova/harness/e2e	0.075s
-ok  	github.com/wunderforge/agenova/harness/fixtures/contract/v0	0.847s
-ok  	github.com/wunderforge/agenova/internal/app	0.153s
-ok  	github.com/wunderforge/agenova/internal/cli	0.165s
-ok  	github.com/wunderforge/agenova/internal/facts	0.218s
-ok  	github.com/wunderforge/agenova/internal/governance	0.278s
-ok  	github.com/wunderforge/agenova/internal/modelgateway	0.062s
-ok  	github.com/wunderforge/agenova/internal/operator	0.256s
+ok  	github.com/wunderforge/agenova/api/v1alpha1	1.138s
+ok  	github.com/wunderforge/agenova/cmd/agenova	4.114s
+ok  	github.com/wunderforge/agenova/harness/e2e	1.120s
+ok  	github.com/wunderforge/agenova/harness/fixtures/contract/v0	1.725s
+ok  	github.com/wunderforge/agenova/internal/app	0.929s
+ok  	github.com/wunderforge/agenova/internal/cli	0.903s
+ok  	github.com/wunderforge/agenova/internal/facts	0.928s
+ok  	github.com/wunderforge/agenova/internal/governance	0.061s
+ok  	github.com/wunderforge/agenova/internal/modelgateway	0.976s
+ok  	github.com/wunderforge/agenova/internal/operator	1.068s
 ?   	github.com/wunderforge/agenova/internal/runtime	[no test files]
-ok  	github.com/wunderforge/agenova/internal/runtime/agentsandbox	0.250s
+ok  	github.com/wunderforge/agenova/internal/runtime/agentsandbox	1.030s
 ?   	github.com/wunderforge/agenova/internal/runtime/contracttest	[no test files]
 ?   	github.com/wunderforge/agenova/internal/sandbox	[no test files]
-ok  	github.com/wunderforge/agenova/internal/toolgateway	0.255s
-ok  	github.com/wunderforge/agenova/ui/contractgen	0.098s
+ok  	github.com/wunderforge/agenova/internal/toolgateway	1.010s
+ok  	github.com/wunderforge/agenova/ui/contractgen	1.184s
 [pass] go test ./...
 ok  	github.com/wunderforge/agenova/harness/integration/agentsandbox	(cached) [no tests to run]
 [pass] Agent Sandbox integration package compiles
@@ -69,7 +69,7 @@ ok  	github.com/wunderforge/agenova/harness/integration/agentsandbox	(cached) [n
 === RUN   TestBindingsTrackEnumsAndDuration
 --- PASS: TestBindingsTrackEnumsAndDuration (0.01s)
 PASS
-ok  	github.com/wunderforge/agenova/ui/contractgen	0.055s
+ok  	github.com/wunderforge/agenova/ui/contractgen	0.070s
 
 [pass] deliberate requestRef binding drift rejected
 [pass] unchanged canonical bindings still pass
@@ -79,8 +79,8 @@ ok  	github.com/wunderforge/agenova/ui/contractgen	0.055s
 
  Test Files  1 passed (1)
       Tests  22 passed (22)
-   Start at  19:35:21
-   Duration  2.73s (environment 71%, transform 28%, import 1%)
+   Start at  19:42:18
+   Duration  3.46s (environment 75%, transform 24%, import 1%)
 
 
 > @agenova/fixture-storyboard@0.0.0 typecheck
@@ -95,11 +95,11 @@ ok  	github.com/wunderforge/agenova/ui/contractgen	0.055s
 
 
  Test Files  3 passed (3)
-      Tests  71 passed (71)
-   Start at  19:35:27
-   Duration  4.45s (environment 52%, transform 30%, tests 10%, import 7%)
+      Tests  72 passed (72)
+   Start at  19:42:25
+   Duration  4.80s (environment 56%, transform 29%, tests 8%, import 7%)
 
-  Transform  transforming modules took 3.56s · 30% of tracked time, re-done on every run
+  Transform  transforming modules took 3.69s · 29% of tracked time, re-done on every run
              persist transforms across runs with fsModuleCache: true
              learn more: https://vitest.dev/guide/improving-performance#caching-between-reruns
 
@@ -138,7 +138,7 @@ ok  	github.com/wunderforge/agenova/ui/contractgen	0.055s
 === RUN   TestBindingsTrackEnumsAndDuration
 --- PASS: TestBindingsTrackEnumsAndDuration (0.01s)
 PASS
-ok  	github.com/wunderforge/agenova/ui/contractgen	0.055s
+ok  	github.com/wunderforge/agenova/ui/contractgen	0.070s
 
 [pass] deliberate requestRef binding drift rejected
 [pass] unchanged canonical bindings still pass
@@ -149,9 +149,9 @@ rendering chunks...
 computing gzip size...
 dist/index.html                   0.37 kB │ gzip:  0.27 kB
 dist/assets/index-DjOwMEl2.css    2.45 kB │ gzip:  1.00 kB
-dist/assets/index-Bq63K91V.js   228.58 kB │ gzip: 67.10 kB
+dist/assets/index-COWV8tj3.js   228.69 kB │ gzip: 67.18 kB
 
-✓ built in 1.31s
+✓ built in 1.54s
 
 > @agenova/fixture-storyboard@0.0.0 test:smoke
 > playwright test
@@ -159,33 +159,33 @@ dist/assets/index-Bq63K91V.js   228.58 kB │ gzip: 67.10 kB
 
 Running 23 tests using 2 workers
 
-(node:28984) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(node:3448) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
 (Use `node --trace-warnings ...` to show where the warning was created)
-(node:33728) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(node:34208) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
 (Use `node --trace-warnings ...` to show where the warning was created)
-  ok  1 smoke\storyboard.spec.ts:14:3 › request-only: claim-request.valid.team-a-engineer-json (634ms)
-  ok  2 smoke\console.spec.ts:18:5 › console 1100 allowed (799ms)
-  ok  3 smoke\storyboard.spec.ts:14:3 › allow-running: issued-state.valid.team-a-engineer (414ms)
-  ok  4 smoke\console.spec.ts:18:5 › console 1100 narrowed (529ms)
-  ok  5 smoke\storyboard.spec.ts:14:3 › deny-no-claim: issued-state.valid.team-b-denial (414ms)
-  ok  6 smoke\console.spec.ts:18:5 › console 1100 denied (514ms)
-  ok  7 smoke\storyboard.spec.ts:14:3 › invalid-caller-state: issued-state.invalid.caller-effective-authority (362ms)
-  ok  8 smoke\console.spec.ts:18:5 › console 1100 loading (382ms)
-  ok  9 smoke\storyboard.spec.ts:14:3 › missing-field: derived.missing-field (370ms)
-  ok 10 smoke\console.spec.ts:18:5 › console 1100 not-found (345ms)
-  ok 11 smoke\storyboard.spec.ts:14:3 › unknown-field: derived.unknown-field (338ms)
-  ok 13 smoke\storyboard.spec.ts:37:1 › mobile selection stays usable without horizontal overflow (293ms)
-  ok 12 smoke\console.spec.ts:18:5 › console 1100 malformed (378ms)
-  ok 14 smoke\console.spec.ts:18:5 › console 1100 unavailable (338ms)
-  ok 15 smoke\console.spec.ts:18:5 › console 390 allowed (392ms)
-  ok 16 smoke\console.spec.ts:18:5 › console 390 narrowed (407ms)
-  ok 17 smoke\console.spec.ts:18:5 › console 390 denied (361ms)
-  ok 18 smoke\console.spec.ts:18:5 › console 390 loading (272ms)
-  ok 19 smoke\console.spec.ts:18:5 › console 390 not-found (276ms)
-  ok 20 smoke\console.spec.ts:18:5 › console 390 malformed (285ms)
-  ok 21 smoke\console.spec.ts:18:5 › console 390 unavailable (271ms)
-  ok 22 smoke\console.spec.ts:57:1 › console direct claim route, reload, navigation and browser history (457ms)
-  ok 23 smoke\console.spec.ts:74:1 › console keyboard, focus, semantic structure and source announcements (417ms)
+  ok  1 smoke\storyboard.spec.ts:14:3 › request-only: claim-request.valid.team-a-engineer-json (1.7s)
+  ok  2 smoke\console.spec.ts:18:5 › console 1100 allowed (1.7s)
+  ok  3 smoke\storyboard.spec.ts:14:3 › allow-running: issued-state.valid.team-a-engineer (422ms)
+  ok  4 smoke\console.spec.ts:18:5 › console 1100 narrowed (549ms)
+  ok  5 smoke\storyboard.spec.ts:14:3 › deny-no-claim: issued-state.valid.team-b-denial (390ms)
+  ok  6 smoke\console.spec.ts:18:5 › console 1100 denied (511ms)
+  ok  7 smoke\storyboard.spec.ts:14:3 › invalid-caller-state: issued-state.invalid.caller-effective-authority (356ms)
+  ok  8 smoke\console.spec.ts:18:5 › console 1100 loading (366ms)
+  ok  9 smoke\storyboard.spec.ts:14:3 › missing-field: derived.missing-field (368ms)
+  ok 10 smoke\console.spec.ts:18:5 › console 1100 not-found (402ms)
+  ok 11 smoke\storyboard.spec.ts:14:3 › unknown-field: derived.unknown-field (415ms)
+  ok 12 smoke\console.spec.ts:18:5 › console 1100 malformed (375ms)
+  ok 13 smoke\storyboard.spec.ts:37:1 › mobile selection stays usable without horizontal overflow (306ms)
+  ok 14 smoke\console.spec.ts:18:5 › console 1100 unavailable (352ms)
+  ok 15 smoke\console.spec.ts:18:5 › console 390 allowed (412ms)
+  ok 16 smoke\console.spec.ts:18:5 › console 390 narrowed (421ms)
+  ok 17 smoke\console.spec.ts:18:5 › console 390 denied (373ms)
+  ok 18 smoke\console.spec.ts:18:5 › console 390 loading (307ms)
+  ok 19 smoke\console.spec.ts:18:5 › console 390 not-found (307ms)
+  ok 20 smoke\console.spec.ts:18:5 › console 390 malformed (305ms)
+  ok 21 smoke\console.spec.ts:18:5 › console 390 unavailable (308ms)
+  ok 22 smoke\console.spec.ts:57:1 › console direct claim route, reload, navigation and browser history (519ms)
+  ok 23 smoke\console.spec.ts:74:1 › console keyboard, focus, semantic structure and source announcements (453ms)
 
-  23 passed (8.1s)
+  23 passed (10.0s)
 [pass] frontend contracts, types, components, production build and browser smoke
