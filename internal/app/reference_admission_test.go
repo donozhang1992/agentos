@@ -26,12 +26,13 @@ func TestReferenceAssignmentSameYAMLAllowsTeamAAndDeniesTeamB(t *testing.T) {
 		name              string
 		preset            ReferencePrincipalPreset
 		wantSubject       string
+		wantTeam          string
 		wantResult        v1alpha1.DecisionResult
 		wantContinuations int
 		wantDeniedState   bool
 	}{
-		{"team-a", ReferencePrincipalTeamA, "user:team-a-engineer", v1alpha1.DecisionResultAllow, 1, false},
-		{"team-b", ReferencePrincipalTeamB, "user:team-b-engineer", v1alpha1.DecisionResultDeny, 0, true},
+		{"team-a", ReferencePrincipalTeamA, "user:team-a-engineer", "team-a", v1alpha1.DecisionResultAllow, 1, false},
+		{"team-b", ReferencePrincipalTeamB, "user:team-b-engineer", "team-b", v1alpha1.DecisionResultDeny, 0, true},
 	}
 
 	for _, tc := range tests {
@@ -56,6 +57,9 @@ func TestReferenceAssignmentSameYAMLAllowsTeamAAndDeniesTeamB(t *testing.T) {
 			}
 			if result.Principal.Subject != tc.wantSubject || result.Decision.PrincipalRef != tc.wantSubject {
 				t.Fatalf("principal = %+v, decision = %+v, want subject %q", result.Principal, result.Decision, tc.wantSubject)
+			}
+			if result.Principal.Team != tc.wantTeam || result.Principal.AuthenticationContext != "reference:local" {
+				t.Fatalf("principal = %+v, want team %q and reference:local context", result.Principal, tc.wantTeam)
 			}
 			if result.Decision.Result != tc.wantResult {
 				t.Fatalf("decision = %q, want %q", result.Decision.Result, tc.wantResult)
