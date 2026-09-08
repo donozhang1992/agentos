@@ -72,13 +72,13 @@ Full #60 acceptance still blocked:
 
 - [x] Inspect #60, #107, architecture, #59 and current UI; verify latest #108 head.
 - [x] Create `codex/0060-claim-console` from #108 head `4954efe91c2bd081e045cc1ad37244467849ea41`.
-- [ ] Record the user's bounded staged-direction approval on #60 and publish this packet for independent planning review.
-- [ ] Obtain and record required independent human planning approval on #60 before implementation.
-- [ ] Add the single-claim route and fixture reference lookup through the existing EvidenceSource.
-- [ ] Compose the correlated single-claim presentation and visible missing-data sections.
-- [ ] Add canonical-parser-validated derived narrowing and deterministic source-status scenarios without copied fixture payloads.
-- [ ] Add component, route, reference-correlation, keyboard, viewport and browser screenshot evidence.
-- [ ] Run focused commands and `./scripts/check.ps1 -All`; record exact outputs and fixture/derivation identities.
+- [x] Record the user's bounded staged-direction approval on #60 and publish this packet for independent planning review.
+- [x] Obtain and record required independent human planning approval on #60 before implementation.
+- [x] Add the single-claim route and fixture reference lookup through the existing EvidenceSource.
+- [x] Compose the correlated single-claim presentation and visible missing-data sections.
+- [x] Add canonical-parser-validated derived narrowing and deterministic source-status scenarios without copied fixture payloads.
+- [x] Add component, route, reference-correlation, keyboard, viewport and browser screenshot evidence.
+- [x] Run focused commands and `./scripts/check.ps1 -All`; record exact outputs and fixture/derivation identities.
 - [ ] Push only #60 changes to the stacked PR, request `@codex review`, and report the implemented subset plus live blockers. Do not merge or close #60.
 
 ## Quality Gates
@@ -123,7 +123,7 @@ After approval, staged implementation:
 - #59 returns separate request and issued results. The composition layer may load both through the existing interface, retaining their canonical types and checking correlation; it must not invent a serialized combined evidence contract. Unmatched request data stays unavailable.
 - Canonical Team A requested/effective access is equal. Narrowing therefore needs a declared, canonically validated in-memory derivative. Current v0 snapshots have no detailed invocation decisions, agent outcome or terminal revocation evidence; these are display gaps owned upstream, not fields to invent.
 - #38 and #68 are open. Full #60 remains blocked on their accepted live contract and evidence, regardless of staged frontend progress.
-- Independent human planning review is pending; no #60 implementation changes are authorized to begin until it is recorded on the Ticket.
+- Independent planning approval at 0eb707b was recorded on #60: https://github.com/wunderforge/agenova/issues/60#issuecomment-5582660832. The approved fixture portion is authorized; full live completion remains blocked.
 
 ### Planning evidence (2026-09-08)
 

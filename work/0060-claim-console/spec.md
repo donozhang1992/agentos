@@ -46,5 +46,5 @@ Present one governed assignment as a readable story using the already accepted c
 
 ## Open Decisions
 
-- Independent human Reviewer approval of this packet is required before construction, particularly the correlation rules, declared narrowing derivative and honest outcome/invocation gaps.
+- Independent planning approval of 0eb707b is recorded on #60 (comment 5582660832), including correlation, declared narrowing and explicit missing outcome/invocation evidence. No staged implementation decision remains open.
 - No live schema decision is delegated to this ticket; #38/#68 remain the producing authorities.

@@ -12,6 +12,49 @@ npm --prefix ui run dev
 
 Open the local address printed by Vite. Choose any of the 12 canonical request/issued-state cases or the two explicitly labeled, in-memory display corruptions. Request intent does not grant authority; Team B denial has no fabricated claim. No absent invocation list is presented as observed zero invocations.
 
+## Staged single-claim console (#60)
+
+Append one of these client routes to the printed local address (the original contract storyboard remains at `/`):
+
+```text
+/console/requests/fix-payment-timeout
+/console/claims/claim%3Afix-payment-timeout%3A1
+/console/requests/fix-payment-timeout?scenario=narrowed
+/console/requests/fix-payment-timeout-team-b
+```
+
+These are presentation routes, not API endpoints. Request and claim references
+resolve through the fixture EvidenceSource. The page compares request/issued
+values only after reference and template correlation; the Team B snapshot has
+no matching request document and says so explicitly.
+
+The `narrowed` scenario removes `github.pull-request` from Team A's effective
+tools in memory and revalidates with the canonical Go system parser. It is
+visibly labeled as derived, not executed policy evidence. Source-state scenarios
+are `loading`, `not-found`, `malformed` and `unavailable`; select them in the
+labeled fixture control or use `?scenario=...`. Loading deliberately remains
+pending until navigation, with no polling or timer. Malformed deletes `evidence`
+from a cloned snapshot so generated shape checks expose the missing field.
+
+```powershell
+npm --prefix ui test -- --run src/console.test.tsx
+npm --prefix ui run build
+npm --prefix ui run test:smoke -- console.spec.ts
+```
+
+Console screenshots cover seven states at 1100x1000 and 390x844, with route
+reload/history, keyboard, focus, landmarks and live-region smoke checks. The
+full commands below include both console and original storyboard regressions.
+No new dependency or canonical fixture payload is needed.
+
+This is only the fixture-driven portion of #60. #38/#68 still block live
+assembled evidence, HttpEvidenceSource, bounded polling, real-API E2E and CLI
+equality. Agent outcome, revocation, and detailed invocation decisions absent
+from v0 remain explicit gaps. Do not interpret this page as live integration
+or mark #60 complete. See the [approved console packet](../work/0060-claim-console/task.md).
+
+## Shared checks
+
 ```powershell
 npm --prefix ui run contracts:generate
 npm --prefix ui run contracts:check
