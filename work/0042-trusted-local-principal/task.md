@@ -1,0 +1,97 @@
+# Task: Supply a trusted local principal boundary
+
+- Ticket: [#42](https://github.com/wunderforge/agenova/issues/42)
+- Mission: Supply deterministic Team A or Team B identity through one explicit reference authentication boundary outside ClaimRequest, then consume the existing assignment authorization gate.
+- Target: A small local reference identity boundary, composition in `internal/app/`, and focused integration/demo tests; exact new file names follow dependency acceptance.
+- User value: Run identical YAML under two local principals and inspect a real denial without a fabricated claim.
+- PRD outcome: [Declarative request and authorization resolution](../../docs/product/prd.md#1-declarative-request-and-authorization-resolution), [Facts and accountability](../../docs/product/prd.md#5-facts-and-accountability), and [Acceptance Scenario](../../docs/product/prd.md#acceptance-scenario).
+
+## Context to Read
+
+Always:
+
+- [Agent routing](../../AGENTS.md)
+- [MVP PRD](../../docs/product/prd.md)
+- this task packet
+
+Additional task-specific context:
+
+- [Feature spec](spec.md)
+- [Submission and Resolution](../../docs/product/architecture-contract.md#submission-and-resolution) and [Evidence Surfaces](../../docs/product/architecture-contract.md#evidence-surfaces)
+- [AIDLC](../../docs/development/AIDLC.md#adaptive-planning-depth)
+- [Start a GitHub Ticket](../../docs/harness/playbooks.md#start-a-github-ticket) and [Add a User-Facing Demo Slice](../../docs/harness/playbooks.md#add-a-user-facing-demo-slice)
+- [ClaimRequest parser](../../api/v1alpha1/claim_request.go), [canonical Principal/Decision/Evidence](../../api/v1alpha1/sandbox_claim.go), and [composition root](../../internal/app/runtime.go)
+- [#27 / PR #96](https://github.com/wunderforge/agenova/pull/96), including its current reviews
+- Inspected #96 snapshot: [gate](https://github.com/wunderforge/agenova/blob/3610cf0bd4c18a30dc46e1cd50302972128e720d/internal/authorization/authorization.go), [spec](https://github.com/wunderforge/agenova/blob/3610cf0bd4c18a30dc46e1cd50302972128e720d/work/0027-authorize-assignment/spec.md), and [tests](https://github.com/wunderforge/agenova/blob/3610cf0bd4c18a30dc46e1cd50302972128e720d/internal/authorization/authorization_test.go)
+- [#40 composition packet](../0040-cli-composition-root/task.md); [#41 submission owner](https://github.com/wunderforge/agenova/issues/41) is a coordination boundary, not extra implementation scope.
+
+## Scope
+
+In scope:
+
+- One explicitly local/demo authentication boundary configured outside request data with exactly two deterministic identity presets.
+- Inject canonical Principal separately from parsed ClaimRequest into #27's existing gate, reusing policy evaluation and Admission.
+- Identical-YAML A/B integration, request/decision evidence, tamper tests and a bounded executable reference smoke path.
+
+Out of scope:
+
+- OIDC, SSO, production authentication, user directory/management, session management, credentials or identity-provider integration.
+- Reimplementing #27 authorization, policy administration, effective-authority resolution (#28), claim issuance (#29), runtime allocation or append-only storage (#37).
+- Implementing #41's full run command, changing PR #96 or copying its implementation onto main.
+
+## Acceptance Criteria
+
+- The boundary constructs fixed non-empty subject/team/authentication-context values. Request data cannot select or overwrite them.
+- Identical ClaimRequest bytes run under either principal; only out-of-band reference setup changes.
+- With canonical active policy, Team A reaches assignment authorization and its authorized continuation exactly once. A continuation spy proves reachability, not actual issuance.
+- Team B receives Deny before effective-authority resolution, claim creation or backend allocation, with zero downstream calls.
+- Team B output uses canonical Principal/Action/Decision/Evidence in IssuedState, with request reference, decision ID, actual policy ID/version and reason. Claim, effective authority, claim ID and backend identity are absent.
+- Reserved YAML principal fields are rejected; identity-looking permitted task input cannot change the injected principal.
+
+## Negative Case
+
+- Run as Team B with Team A principal data inserted at reserved YAML paths: parser rejects it and downstream calls remain zero.
+- Insert Team A identity strings into permitted opaque task input: trusted principal stays Team B and authorization denies.
+- Missing or unknown local preset fails before authorization and any side effect, without fallback to Team A.
+
+## Execution Todo
+
+- [x] Scout relevant contracts, composition, dependency head and reviews.
+- [ ] Confirm this packet with the Owner and Reviewer in #42 before implementation.
+- [ ] Record the exact accepted #96 head and establish the required implementation stack.
+- [ ] Add the single local identity boundary and inject Principal through the composition edge into the existing gate.
+- [ ] Add same-YAML integration, tamper tests and executable reference evidence output.
+- [ ] Run focused G2/G3 evidence and the repository baseline; record exact commands/artifacts.
+- [ ] Review the diff for scope, regressions and source-of-truth changes.
+
+## Quality Gates
+
+- Planning: `pwsh -NoLogo -NoProfile -File scripts/check.ps1 -Docs` and `git diff --check`.
+- Later G2: `go test -race -count=1 -v ./internal/app/... ./internal/authorization/... ./api/v1alpha1`; include any new boundary package explicitly in the final command.
+- Later G3: executable same-file A/B smoke plus tamper cases. Record the exact implemented entrypoint, commands, fixture SHA-256, outputs and exit codes in the implementation PR; no nonexistent command is claimed as evidence here.
+- Later baseline: `pwsh -NoLogo -NoProfile -File scripts/check.ps1 -All`.
+
+## Evidence Required
+
+- Planning: docs-check output, whitespace-check exit code, docs-only diff, exact commit and draft PR URL in the #42 handoff.
+- Implementation: fixture digest before/after both runs; actual principal and authorization output; one Allow continuation versus zero Deny continuation/claim/backend calls.
+- Team B serialized canonical evidence validates without a fabricated claim. Empty runtime/tool/model collections remain canonical.
+- Reserved-field rejection, opaque-input non-authority and missing/unknown preset evidence.
+- A continuation spy is not issuance or real-backend proof. Record dependency blockers instead of inventing policy/claim/backend identities.
+
+## Constraints
+
+- Preserve [architecture contract](../../docs/product/architecture-contract.md); do not broaden the Ticket or PRD without a recorded human decision.
+- Preset selection is explicit local operator/test setup outside request data. CLI possession grants no authority; no production authentication claim.
+- Consume #27's `authorization.Request`, `Gate.Admit` and `Admission`. Only validated project/template references become Action context; task input supplies neither project nor principal.
+- This delivery is planning only: no implementation, merge, issue closure or completion claim.
+
+## Decisions and Blockers
+
+- Planning depth: Task + Spec, the minimum for shared authority semantics; no separate design document.
+- Inspection on 2026-09-08: planning main and #96 base `main` both resolve to `3365cd0e37d181146dd5b6f8e65a58e03b6fb39e`. Open #96 head `codex/e2-t2-authorize-assignment` resolves to `3610cf0bd4c18a30dc46e1cd50302972128e720d`. This snapshot is not acceptance.
+- #42 lists #27 and #40 as dependencies; #40 was closed at inspection. GitHub remains authoritative for live status and assignments.
+- Before construction, Owner/Reviewer must record packet approval and acceptance of the exact #96 head in #42. At inspection #42 is assigned to wunderforge, with no Reviewer approval recorded; ask for Reviewer designation in the handoff.
+- Stack rule: planning may target current main. Later implementation must start from the exact accepted #96 head, carry only this packet forward, and target `codex/e2-t2-authorize-assignment` until #27 merges. If the head moves, inspect and record replacement acceptance before building on it. After #27 merges, reconcile with main and verify only #42 changes remain. Do not copy #27 implementation or modify #96.
+- #96 review findings cover unavailable-policy denial evidence and whitespace-only policy rule fields. Resolution belongs upstream. Canonical A/B evidence uses a real active versioned policy; never fabricate a policy reference to bypass validation.
+- Planning PR uses `Refs #42`, not an auto-closing keyword. The current PR-body validator requires a closing keyword; report that planning-only validation failure without changing the harness or claiming completion.
