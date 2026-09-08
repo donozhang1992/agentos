@@ -76,7 +76,7 @@ Out of scope:
 ## Decisions and Blockers
 
 - Owner approved removing parent/child multi-agent lineage from the committed MVP on 2026-09-08; the existing implementation may remain as experimental evidence.
-- Calibration pass 1 (scope residue): all remaining parent/child, lineage, or multi-agent references in current documentation are explicitly future, experimental, or out of scope. The scan also found and corrected one stale statement that treated the merged `AgentTemplate` and `ClaimRequest` contracts as unimplemented.
+- Calibration pass 1 (scope residue): all remaining parent/child, lineage, or multi-agent references in current documentation are explicitly future, experimental, or out of scope. The scan also found and corrected one stale statement that treated the merged `AgentTemplate` and `ClaimRequest` contracts as unimplemented. A broader follow-up scan using independent `parent` and `child` terms caught residual parent/child acceptance clauses in #32 and #35; both were removed before the pass was repeated.
 - Calibration pass 2 (dependency closure): E5 now contains only #37/#38, E9 contains only #53/#55, retained MVP tickets do not depend on #39/#54, and the #107 single-claim critical path remains complete. #39/#54 are P2 Backlog items with no milestone or Epic/Wave/Sequence assignment.
 - `./scripts/check.ps1 -Docs` and `./scripts/check.ps1 -All` passed on 2026-09-08.
 - Independent review is still required before merge.
