@@ -10,7 +10,7 @@ Agenova provides a **claim-scoped governance contract** for reusable agent work.
 - A `SandboxClaim` is one agent worker run / scoped assignment.
 - A claim is not one tool call.
 - Agent code and its framework own prompts, reasoning, plans, and task semantics.
-- Agenova owns claim lifecycle, scoped authority, gateway boundaries, facts, lineage, and backend evidence.
+- Agenova owns claim lifecycle, scoped authority, gateway boundaries, facts, and backend evidence. Parent/child lineage is a future governance extension.
 - Runtime backends own process execution and substrate capabilities.
 
 ## Submission and Resolution
@@ -66,12 +66,12 @@ Pending / Bound / Running -> Expired when the relevant timeout applies
 - A sandbox may receive only scoped identity material required to authenticate to Agenova components.
 - Gateway policy and tests do not replace network controls, workload identity, or backend isolation evidence.
 
-## Facts and Lineage
+## Facts and Future Lineage
 
 - `ToolInvocation`, `ModelInvocation`, and `RuntimeEvent` are append-only facts below a claim.
 - Facts must be attributable to the correct claim and must not be cross-assigned between workers.
-- Parent/child claims express authority scope and accountability.
-- Claim lineage must not grow into workflow scheduling without a separately approved product scope.
+- Parent/child claims are outside the committed MVP. If introduced later, they must express authority scope and accountability.
+- Future claim lineage must not grow into workflow scheduling without a separately approved product scope.
 
 ## Evidence Surfaces
 

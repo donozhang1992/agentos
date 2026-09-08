@@ -94,14 +94,14 @@ The trusted principal comes from an upstream authentication boundary and is not 
 ### 4. Claim-scoped authority
 
 - Only an active `Running` claim can use governed Tool or Model interfaces.
-- Unknown, pending, terminal, and out-of-parent-scope claims are denied.
+- Unknown, pending, terminal, and context-mismatched claims are denied.
 - Long-lived external credentials are not placed in sandbox configuration.
 
 ### 5. Facts and accountability
 
 - Control-plane authorization decisions record the trusted principal, action, allow/deny result, policy ID/version, and reason.
 - Runtime, tool, and model facts are attributable to the correct claim.
-- Users can query a request or claim's lifecycle, invocations, outcome, lineage, and backend evidence through the CLI and a read-only console backed by the same evidence representation.
+- Users can query a request or claim's lifecycle, invocations, outcome, and backend evidence through the CLI and a read-only console backed by the same evidence representation.
 - Denied requests produce inspectable evidence in the target MVP.
 
 ### 6. Reference installation and initial policy bootstrap
@@ -115,7 +115,7 @@ The trusted principal comes from an upstream authentication boundary and is not 
 ### 7. Read-only claim console
 
 - A minimal read-only API exposes the stable evidence view by request reference or claim ID.
-- A React console uses bounded polling to display live lifecycle, requested versus effective authority, decisions, invocations, lineage, outcome, and backend identity.
+- A React console uses bounded polling to display live lifecycle, requested versus effective authority, decisions, invocations, outcome, and backend identity.
 - CLI, API, and UI share one evidence contract; the frontend does not create a separate governance model.
 - Claim search, mutation controls, policy editing, WebSocket/SSE streaming, and broad administration remain outside the MVP.
 
@@ -129,16 +129,17 @@ The trusted principal comes from an upstream authentication boundary and is not 
 
 - Backend-neutral `ClaimRequest`, `SandboxClaim`, and `RuntimeBackend` contracts plus reference implementation.
 - Minimal trusted-principal, static policy-bundle, action-authorization, and decision-evidence contracts plus reference evaluator.
-- Contract, authorization, facts, and lineage tests.
+- Contract, authorization, facts, and evidence-view tests.
 - One runnable local golden demo exposed through CLI or an equivalent executable entrypoint.
 - One supported, idempotent reference installation/bootstrap command for an existing test cluster.
 - One real backend adapter evidence path; Kubernetes Agent Sandbox is the current candidate.
 - One evidence representation consumed by CLI JSON, a minimal read-only API, and the React claim console.
-- One example multi-agent scenario, such as engineer plus reviewer.
+- One minimal engineer Agent Artifact and one bounded adversarial denial scenario.
 - Quickstart, contributor guide, and quality gates.
 
 ## Out of Scope Unless Re-Prioritized
 
+- Parent/child claim authority inheritance, lineage, and multi-agent orchestration.
 - General workflow DAG orchestration.
 - Multiple production-grade backend adapters.
 - A complete Memory platform or rollback system.
@@ -160,10 +161,9 @@ The MVP is accepted when a teammate can reproduce this behavior:
 5. Observe backend allocation and claim transition to `Running`.
 6. Execute one allowed tool call and one allowed model call.
 7. Attempt at least one denied governed request and observe evidence without an external call.
-8. Submit a child `reviewer` request and show facts attributed to the correct claim.
-9. End the parent or worker claim and prove further governed access is denied.
-10. Query the same evidence representation through CLI JSON and the live read-only console.
-11. Run the reference path locally and demonstrate the supported runtime portion on the selected real backend.
+8. End the worker claim and prove further governed access is denied.
+9. Query the same evidence representation through CLI JSON and the live read-only console.
+10. Run the reference path locally and demonstrate the supported runtime portion on the selected real backend.
 
 ## Success Measures
 
