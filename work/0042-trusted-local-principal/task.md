@@ -57,12 +57,12 @@ Out of scope:
 ## Execution Todo
 
 - [x] Scout relevant contracts, composition, dependency head and reviews.
-- [ ] Confirm this packet with the Owner and Reviewer in #42 before implementation.
-- [ ] Record the exact accepted #96 head and establish the required implementation stack.
-- [ ] Add the single local identity boundary and inject Principal through the composition edge into the existing gate.
-- [ ] Add same-YAML integration, tamper tests and executable reference evidence output.
-- [ ] Run focused G2/G3 evidence and the repository baseline; record exact commands/artifacts.
-- [ ] Review the diff for scope, regressions and source-of-truth changes.
+- [x] Confirm this packet with the Owner and Reviewer in #42 before implementation.
+- [x] Record the exact accepted #96 head and establish the required implementation stack.
+- [x] Add the single local identity boundary and inject Principal through the composition edge into the existing gate.
+- [x] Add same-YAML integration, tamper tests and executable reference evidence output.
+- [x] Run focused G2/G3 evidence and the repository baseline; record exact commands/artifacts.
+- [x] Review the diff for scope, regressions and source-of-truth changes.
 
 ## Quality Gates
 
@@ -84,14 +84,16 @@ Out of scope:
 - Preserve [architecture contract](../../docs/product/architecture-contract.md); do not broaden the Ticket or PRD without a recorded human decision.
 - Preset selection is explicit local operator/test setup outside request data. CLI possession grants no authority; no production authentication claim.
 - Consume #27's `authorization.Request`, `Gate.Admit` and `Admission`. Only validated project/template references become Action context; task input supplies neither project nor principal.
-- This delivery is planning only: no implementation, merge, issue closure or completion claim.
+- Keep the implementation local/demo-only: no production authentication, merge, issue closure or completion claim before review.
 
 ## Decisions and Blockers
 
 - Planning depth: Task + Spec, the minimum for shared authority semantics; no separate design document.
-- Inspection on 2026-09-08: planning main and #96 base `main` both resolve to `3365cd0e37d181146dd5b6f8e65a58e03b6fb39e`. Open #96 head `codex/e2-t2-authorize-assignment` resolves to `3610cf0bd4c18a30dc46e1cd50302972128e720d`. This snapshot is not acceptance.
+- Inspection on 2026-09-08: planning main and #96 base `main` both resolve to `3365cd0e37d181146dd5b6f8e65a58e03b6fb39e`. Open #96 head `codex/e2-t2-authorize-assignment` resolves to `3610cf0bd4c18a30dc46e1cd50302972128e720d`; the Owner later accepted that exact revision for #42.
 - #42 lists #27 and #40 as dependencies; #40 was closed at inspection. GitHub remains authoritative for live status and assignments.
-- Before construction, Owner/Reviewer must record packet approval and acceptance of the exact #96 head in #42. At inspection #42 is assigned to wunderforge, with no Reviewer approval recorded; ask for Reviewer designation in the handoff.
+- Owner approval and acceptance of #96 head `3610cf0bd4c18a30dc46e1cd50302972128e720d` were recorded in #42 on 2026-09-08 before implementation.
 - Stack rule: planning may target current main. Later implementation must start from the exact accepted #96 head, carry only this packet forward, and target `codex/e2-t2-authorize-assignment` until #27 merges. If the head moves, inspect and record replacement acceptance before building on it. After #27 merges, reconcile with main and verify only #42 changes remain. Do not copy #27 implementation or modify #96.
 - #96 review findings cover unavailable-policy denial evidence and whitespace-only policy rule fields. Resolution belongs upstream. Canonical A/B evidence uses a real active versioned policy; never fabricate a policy reference to bypass validation.
-- Planning PR uses `Refs #42`, not an auto-closing keyword. The current PR-body validator requires a closing keyword; report that planning-only validation failure without changing the harness or claiming completion.
+- The implementation PR uses `Closes #42` to satisfy the PR-body contract, remains draft, and must not merge before implementation review.
+- Focused G2/G3 passed with `go test -count=1 -v ./internal/app/... ./internal/authorization/... ./api/v1alpha1`; the shared YAML SHA-256 was `778d101e8ef88c245fe3433d1901020b16cd138a4848c921e5a7e4daccbe7915` for both principals. Team A produced Allow and one continuation; Team B produced Deny, zero continuations, and no claim.
+- Repository baseline passed with `GOFLAGS=-buildvcs=false` and `CGO_ENABLED=0`: `pwsh -NoLogo -NoProfile -File scripts/check.ps1 -All`. The flag avoids nested-worktree VCS stamping only; it does not skip repository checks. Local race execution is blocked because this Windows host has no C compiler; CI owns the race result.
