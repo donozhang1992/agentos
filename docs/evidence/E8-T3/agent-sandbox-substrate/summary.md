@@ -1,28 +1,26 @@
 # Evidence Summary
 
-- Ticket: E8-T3 (#50)
+- Ticket: E8-T3 (#50), PR #99 remediation
 - Gate: agent-sandbox-substrate
-- Date: 2026-08-31T11:43:01Z
-- Branch: neo/e8-t3-kind-agent-sandbox
-- Commit: adf4d76148226c1d69d6affa7805cbbf4410b462
-- Command: reproduce.sh all
-- Pinned Agent Sandbox version: v0.4.6
-- kind: /opt/homebrew/bin/kind (existing)
-- kubectl: /opt/homebrew/bin/kubectl (existing)
-- kind cluster / context: agenova-k8s-lab / kind-agenova-k8s-lab
-- Result: pass
+- Date: 2026-09-09
+- Branch: codex/e8-t3-pr99-unblock
+- Base commit: b031f6a10a450f71aea48a3931ab582dc8a6f4bb
+- Command: `bash harness/spike/agent-sandbox-substrate/reproduce.sh up --capture`
+- Result: **blocked** — Docker is unavailable on the Windows repair machine.
+- Upstream target: Agent Sandbox v0.4.6 / extensions.agents.x-k8s.io/v1alpha1
 
-## Notes
+The old Darwin capture at adf4d76 predates the final script and is superseded.
+Its summary/output are recoverable from Git history; they do not prove the repair.
 
-- Scope: the pinned upstream Agent Sandbox lifecycle only. No Agenova
-  `ClaimRequest`/`SandboxClaim`, `RuntimeBackend` adapter, or contract is
-  exercised here (that is E8-T4 / #51).
-- Reruns are idempotent: cluster and namespace creation are safe to repeat,
-  `teardown` uses `--ignore-not-found`, and `down` deletes only the
-  `agenova-k8s-lab` kind cluster. `smoke` leaves its fixtures in the
-  `agent-sandbox-smoke` namespace; `teardown` removes them.
-- Not isolated here: claim-only deletion vs warm-pool "recycle" behaviour
-  (see #48). The `teardown` phase deletes the claim, pool, and template
-  together and asserts the sandbox pod count reaches zero.
+The isolated command-double gate and repository baseline are separate from
+real-backend acceptance. The baseline passed (including integration compilation);
+no actual integration or race run was performed on this machine. Go emitted a
+telemetry-cache permission warning, but the baseline exited 0.
 
-Raw output: `output.txt`
+Before #99 can be merged as complete, run the final committed script twice with
+`all --capture` on Docker/kind and replace this blocker with one accepted capture.
+The capture must identify the actual commit, script hash, tools/server/CRD versions,
+controller readiness, claim Ready, pod/namespace cleanup and cluster deletion.
+No Agenova claim-governance or adapter proof is asserted here.
+
+Raw prerequisite result: [output.txt](output.txt).
