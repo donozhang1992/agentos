@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"slices"
+	"strings"
 	"sync"
 )
 
@@ -85,7 +86,7 @@ func (l *Loader) Current() (PolicyBundle, bool) {
 
 // Allows reports whether an exact trusted team, action, project, and template rule exists.
 func (b PolicyBundle) Allows(match Match) bool {
-	if match.Team == "" || match.Action == "" || match.Project == "" || match.TemplateRef == "" {
+	if strings.TrimSpace(match.Team) == "" || strings.TrimSpace(match.Action) == "" || strings.TrimSpace(match.Project) == "" || strings.TrimSpace(match.TemplateRef) == "" {
 		return false
 	}
 
@@ -98,16 +99,16 @@ func (b PolicyBundle) Allows(match Match) bool {
 }
 
 func validate(bundle PolicyBundle) error {
-	if bundle.ID == "" {
+	if strings.TrimSpace(bundle.ID) == "" {
 		return errors.New("policy bundle ID is required")
 	}
-	if bundle.Version == "" {
+	if strings.TrimSpace(bundle.Version) == "" {
 		return errors.New("policy bundle version is required")
 	}
 
 	seen := make(map[Rule]int, len(bundle.Rules))
 	for index, rule := range bundle.Rules {
-		if rule.Team == "" || rule.Action == "" || rule.Project == "" || rule.TemplateRef == "" {
+		if strings.TrimSpace(rule.Team) == "" || strings.TrimSpace(rule.Action) == "" || strings.TrimSpace(rule.Project) == "" || strings.TrimSpace(rule.TemplateRef) == "" {
 			return fmt.Errorf("policy rule %d requires team, action, project, and templateRef", index)
 		}
 		if first, ok := seen[rule]; ok {
