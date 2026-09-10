@@ -3,15 +3,13 @@
 - Ticket: [#89](https://github.com/wunderforge/agenova/issues/89)
 - Feature spec: [spec.md](spec.md)
 
-Proposed approach; construction is blocked by the gates in [task.md](task.md).
+Implemented reference approach; real-backend enforcement remains owned by #48/#51.
 
 ## Current State and Constraints
 
-At main `3365cd0e37d181146dd5b6f8e65a58e03b6fb39e`, RuntimeBackend mixes claim phases and pool methods. Its BackendClaim carries pool/input/status, and the reusable suite verifies pool replacement and lifecycle rather than directories or actual worker processes. The reference runtime stores in-memory objects; a successful existing suite is not filesystem evidence.
+The merged #30 RuntimeBackend exposes allocation, observation, explicit start, termination and cleanup while keeping application outcome and pool administration outside the shared interface. #89 adds filesystem description values to Allocation and Observation without adding a sixth operation.
 
-PR #106 at `016989ec238622a4b19de84d7f2fb0afcaf85e80` proposes allocation, observation, explicit start, termination and cleanup, retains concrete reference compatibility helpers, and narrows gateway claim lookup. It is a draft plan, not a merged contract. #89 must wait for the implemented producer and may not introduce a competing seam now.
-
-The Agent Sandbox spike maps image/command to upstream objects and currently uses Ready as its start observation. #106 explicitly identifies that limitation. The current adapter code/backend note establishes no minimum writable-directory enforcement. This packet neither fixes that adapter nor infers isolation from its deletion/replacement behavior.
+The reference runtime stores a per-allocation simulated task filesystem and reports `/workspace` as the worker-visible directory. Its reusable cases prove the neutral contract and lifecycle behavior, not native isolation. The Agent Sandbox adapter reports filesystem evidence as `Unsupported` until #48 maps a substrate and #51 verifies it.
 
 ## Decision
 

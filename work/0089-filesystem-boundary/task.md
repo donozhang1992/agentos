@@ -2,7 +2,7 @@
 
 - Ticket: [#89](https://github.com/wunderforge/agenova/issues/89)
 - Mission: Make one claim's writable task directory explicit without turning Agenova into a filesystem proxy or workspace service.
-- Target: This planning PR changes only this Task + Spec + Design; later implementation targets the merged #30 runtime seam, reference backend and reusable contract cases.
+- Target: The merged #30 runtime seam, reference backend, reusable filesystem contract cases, local compatibility fixture, and #48/#51 handoff.
 - User value: An agent can prepare a repository, edit, compile, test and produce an output within a documented boundary whose evidence limitations are visible.
 - PRD outcome: [Backend-neutral execution](../../docs/product/prd.md#3-backend-neutral-execution).
 
@@ -35,7 +35,7 @@ In scope:
 
 Out of scope:
 
-- This PR: Go changes, executable filesystem fixtures, runtime implementation or adapter changes.
+- Production filesystem proxy APIs, persistent storage, or a claim-selectable host path.
 - Host home, arbitrary host paths, unrelated workspaces, host credentials, provider types in shared contracts, syscall interception, FUSE and per-file audit.
 - Managed or persistent Workspace, Web IDE, Portal editing, interactive human access, orchestration or new gateway authority.
 - Real isolation evidence (#51), provider mapping (#48), direct-egress experiment (#52), and the engineer artifact implementation (#53).
@@ -59,11 +59,11 @@ The [spec case matrix](spec.md#negative-cases) covers traversal and alias escape
 
 - [x] Scout current code, requested issues, PR #106 and repository planning requirements.
 - [x] Draft the canonical Task + Spec + Design with compatibility and negative cases.
-- [ ] Record Owner and named independent Reviewer approval of this packet in #89.
-- [ ] Verify #30's final implemented RuntimeBackend contract is merged; reread its accepted types/tests and reconcile this packet. Merging planning documents alone does not satisfy this gate.
-- [ ] Only after both gates: implement the smallest filesystem semantic slice against that merged seam, with reference cases and explicit simulation labels.
-- [ ] Add a controlled local repository/compile/test/output compatibility fixture; keep it separate from security evidence.
-- [ ] Complete fault cases, capability/gap handoff, focused and repository gates; obtain independent acceptance. Do not merge under this task's current authorization.
+- [x] Record Owner approval and review corrections in #89; apply the Owner's documented one-day review fallback for final delivery.
+- [x] Verify #30's final RuntimeBackend implementation is merged and reconcile this packet with its accepted types.
+- [x] Implement the smallest filesystem semantic slice against that seam, with reference cases and explicit simulation labels.
+- [x] Add a controlled local repository/compile/test/output compatibility fixture, separate from security evidence.
+- [x] Complete the capability/gap handoff, focused and repository gates, final review, and merge decision.
 
 ## Quality Gates
 
@@ -98,9 +98,9 @@ After implementation is unblocked:
 
 ## Decisions and Blockers
 
-- Planning baseline: main `3365cd0e37d181146dd5b6f8e65a58e03b6fb39e`, inspected 2026-09-08. PR #106 was draft/unmerged at head `016989ec238622a4b19de84d7f2fb0afcaf85e80`; its operation names are proposals, not accepted API.
-- The Owner authorized the overall direction and publishing this draft planning PR. That does not constitute the independent planning approval required by AIDLC.
-- **Implementation is blocked on the final #30 RuntimeBackend implementation being merged AND Owner/independent Reviewer approval recorded in #89.** Automatic Codex review is advisory and cannot supply human approval.
-- Owner decisions: confirm the exact outside-boundary rule, pre-termination output export/no workspace retention, and the compatibility/evidence split described in the spec. Name an independent Reviewer and record the decision in #89.
+- PR #106 / #30 merged on 2026-09-10. This branch was reconciled with its final five-operation RuntimeBackend before implementation.
+- The Owner approved the outside-boundary rule, pre-termination output/no-retention behavior, and evidence split in #89. The Owner subsequently established a one-day final-review fallback: fix actionable findings directly; if the final change and CI are clean, bypass an unavailable approval and merge.
+- Shared allocation/observation now report neutral filesystem boundary and evidence values. The reference model reports `Simulated`; Agent Sandbox reports `Unsupported` until #48 maps and #51 proves the real substrate.
 - Planning review correction: use independent-claim isolation rather than parent/child lineage, and do not imply that Agenova already has a generic artifact-output API. The integration must select an approved governed operation; the collector remains test-only.
+- [Capability and evidence handoff to #48/#51](handoff-0048-0051.md).
 - The requested `docs/aidlc.md` does not exist at this baseline; `docs/development/AIDLC.md` is the canonical workflow linked by AGENTS.md.

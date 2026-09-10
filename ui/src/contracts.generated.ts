@@ -16,6 +16,7 @@ export interface ClaimRequest {
   spec: ClaimRequestSpec;
 }
 export interface ClaimRequestSpec {
+  projectRef?: string;
   requestedAccess?: ClaimRequestedAccess;
   runtime: (ClaimRuntimeRequirements | null);
   task: (ClaimRequestTask | null);
@@ -170,6 +171,12 @@ export const shapes = {
   "ClaimRequestSpec": {
     "kind": "object",
     "fields": {
+      "projectRef": {
+        "shape": {
+          "kind": "string"
+        },
+        "optional": true
+      },
       "requestedAccess": {
         "shape": {
           "kind": "ref",

@@ -37,6 +37,8 @@ type allocation struct {
 	released   bool
 	replaced   bool
 	detail     string
+	filesystem runtime.FilesystemBoundary
+	taskFiles  map[string][]byte
 }
 
 func (a *allocation) identity() v1alpha1.SandboxClaimBackendIdentity {
@@ -85,13 +87,20 @@ func (r *Runtime) Allocate(req runtime.AllocateRequest) (runtime.Allocation, err
 		pool:     pool,
 		workerID: claimed.ID,
 		ready:    !held,
+		filesystem: runtime.FilesystemBoundary{
+			WorkingDirectory: "/workspace",
+			OutsideBoundary:  runtime.FilesystemOutsideRuntimeReadOnlyOtherUnavailable,
+			Ephemeral:        true,
+			EvidenceLevel:    runtime.FilesystemEvidenceSimulated,
+		},
+		taskFiles: make(map[string][]byte),
 	}
 	if held {
 		a.detail = "readiness held by control hook"
 	}
 	r.allocations[req.ClaimID] = a
 	r.byWorker[claimed.ID] = req.ClaimID
-	return runtime.Allocation{ClaimID: req.ClaimID, Identity: a.identity()}, nil
+	return runtime.Allocation{ClaimID: req.ClaimID, Identity: a.identity(), Filesystem: a.filesystem}, nil
 }
 
 // Observe implements runtime.RuntimeBackend. It is a pure read.
@@ -101,12 +110,13 @@ func (r *Runtime) Observe(id v1alpha1.SandboxClaimBackendIdentity) (runtime.Obse
 		return runtime.Observation{}, err
 	}
 	return runtime.Observation{
-		ClaimID:  a.claimID,
-		Identity: a.identity(),
-		Ready:    a.ready && !a.released,
-		Released: a.released,
-		Replaced: a.replaced,
-		Detail:   a.detail,
+		ClaimID:    a.claimID,
+		Identity:   a.identity(),
+		Filesystem: a.filesystem,
+		Ready:      a.ready && !a.released,
+		Released:   a.released,
+		Replaced:   a.replaced,
+		Detail:     a.detail,
 	}, nil
 }
 
@@ -187,6 +197,7 @@ func (r *Runtime) Cleanup(id v1alpha1.SandboxClaimBackendIdentity) (runtime.Clea
 	}
 	a.released = true
 	a.replaced = true
+	a.taskFiles = nil
 	result.Released = true
 	result.Replaced = true
 	return result, nil

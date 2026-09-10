@@ -27,6 +27,7 @@ Support of the five reduced operations against the upstream controller, verified
 | Start | unsupported | The controller starts the pod on its own; there is no channel to acknowledge actual work start. |
 | Terminate | unsupported | No worker-stop evidence exists apart from resource deletion. |
 | Cleanup | supported (release) | Rechecks the recorded worker binding before deletion; changed/missing bindings or query failures prevent deletion. `Released` is reported only after both the claim and the assigned sandbox are confirmed absent; failures are explicit and retryable after identity/release can be confirmed. |
+| Filesystem boundary | unsupported | Allocation and observation explicitly report `FilesystemEvidenceUnsupported`. Ticket #48 must map the worker-visible directory and mount/profile behavior; #51 must provide real isolation evidence before this can become `BackendVerified`. |
 
 `kubectl` invocations carry a per-command deadline and resource absence is classified by exit status and empty output, never by error text.
 
@@ -66,6 +67,7 @@ The integration gate now checks Allocate, identity-matched Observe, explicit uns
 5. `Claim()` returns status but not the original claim spec.
 6. Gateway transport, claim identity, external-egress controls, and durable facts are not integrated with the Kubernetes path.
 7. Workers cannot be enumerated independently of their claim, so if the claim disappears before the worker is observed, its release cannot be confirmed and non-allocation cannot be proven.
+8. The worker filesystem layout, writable task directory, synthetic HOME/cache placement, and outside-boundary enforcement are not yet mapped or verified.
 
 ## Integration Gate
 
@@ -93,5 +95,6 @@ Before describing this as a supported backend:
 - return complete claim identity/spec data;
 - calculate per-pool status correctly;
 - run the applicable shared contract cases;
+- map and verify the Ticket #89 filesystem boundary, including outside and cross-claim negative cases;
 - prove gateway-only external access or clearly state the network limitation;
 - capture reproducible cluster, resource, event, and log evidence.

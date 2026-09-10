@@ -3,7 +3,7 @@
 - Ticket: [#89](https://github.com/wunderforge/agenova/issues/89)
 - PRD outcome: [Backend-neutral execution](../../docs/product/prd.md#3-backend-neutral-execution).
 
-Proposal for planning approval; no accepted Go API or implemented security claim.
+Implemented for the reference contract. Real hostile-process isolation remains unverified until #51 supplies backend evidence.
 
 ## Intent
 
@@ -67,7 +67,7 @@ Positive cases: FS-P1 prepares a fixture repo and records cwd, edits, local git 
 ## Compatibility
 
 - Preserve canonical AgentTemplate/ClaimRequest parsing and authority. No host-path, mount, generic provider-map or credentials field is added as a shortcut.
-- Extend only the final #30 allocation/start/observation/termination/cleanup seam after merge and approval. Do not freeze method names from #106 or migrate gateways from this ticket.
+- Extend only the merged #30 allocation/observation values with the neutral boundary description. Do not migrate gateways from this ticket.
 - #48 maps accepted requirements to native, translated, adapter-held or unsupported capabilities; #51 validates the same workload and negative boundary on a real backend. #52 owns gateway bypass/egress proof.
 - #53 can continue fixture/mock work without depending on this unaccepted API. Its thin external tool client does not require wrapping ordinary local file I/O. Integration later supplies cwd and a supported export client without rebuilding authority semantics.
 
@@ -75,4 +75,4 @@ Positive cases: FS-P1 prepares a fixture repo and records cwd, edits, local git 
 
 - Owner and independent Reviewer must accept the rule including read-only runtime files, synthetic HOME/cache placement and explicit failure for incompatible artifacts/backends.
 - Confirm pre-termination export with zero workspace retention and no guaranteed recovery of unexported outputs after crash/timeout. Confirm that a fixture collector suffices for #89 reference evidence, with live handoff evidence deferred to integration.
-- After #30 implementation merge, confirm the minimum neutral data placement and error vocabulary against its final types. Any producer conflict returns for review; this proposal cannot force an upstream API change.
+- #30 is merged. The minimum neutral description attaches to Allocation and Observation without changing its five operations or adding a file-access API.
