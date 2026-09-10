@@ -71,8 +71,8 @@ func testFilesystemBeforeStart(t *testing.T, f FilesystemFixture) {
 	if err := f.PrepareTaskFile(alloc.Identity, "repo/task.txt", prepared); err != nil {
 		t.Fatalf("prepare task file: %v", err)
 	}
-	if _, err := f.ReadTaskFile(alloc.Identity, "repo/task.txt"); err == nil {
-		t.Fatal("existing task file was readable before Start")
+	if got, err := f.ReadTaskFile(alloc.Identity, "repo/task.txt"); err == nil || got != nil {
+		t.Fatalf("pre-Start read = %q, error = %v, want nil bytes and denial", got, err)
 	}
 	if err := f.WriteTaskFile(alloc.Identity, "repo/task.txt", []byte("mutated-before-start")); err == nil {
 		t.Fatal("task write before Start succeeded")
