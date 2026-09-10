@@ -288,7 +288,7 @@ The primary product surfaces are a usable CLI and a live read-only claim console
 
 The repository already proves reference claim lifecycle, an in-memory backend contract, in-process Tool and Model authorization, claim-scoped facts, and experimental parent/child scope. The experimental lineage behavior is not part of the committed MVP. The repository also contains a Kubernetes Agent Sandbox adapter spike.
 
-The `AgentTemplate` and `ClaimRequest` v0 contracts are implemented. The resolver, usable CLI, networked gateways, durable storage, Memory Interface, and UI are not yet implemented. The [implementation evidence snapshot](project-status.md) records the detailed current boundary.
+The `AgentTemplate` and `ClaimRequest` v0 contracts and a fixture-backed React storyboard are implemented. The resolver, usable CLI, networked gateways, durable storage, Memory Interface, evidence API, and live console are not yet implemented. The [implementation evidence snapshot](project-status.md) records the detailed current boundary.
 
 ### Non-goals
 

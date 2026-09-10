@@ -36,4 +36,4 @@ The committed MVP proves one governed agent assignment from request through evid
 
 ## Open Decisions
 
-- None. The Owner approved single-claim MVP scope on 2026-09-08; independent PR review remains required.
+- None. The Owner approved single-claim MVP scope on 2026-09-08; the final review and merge follow the recorded one-day Owner fallback rule.
