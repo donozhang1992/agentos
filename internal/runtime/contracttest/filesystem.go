@@ -19,6 +19,7 @@ import (
 type FilesystemFixture struct {
 	Backend           runtime.RuntimeBackend
 	TemplateRef       string
+	PrepareTaskFile   func(v1alpha1.SandboxClaimBackendIdentity, string, []byte) error
 	WriteTaskFile     func(v1alpha1.SandboxClaimBackendIdentity, string, []byte) error
 	ReadTaskFile      func(v1alpha1.SandboxClaimBackendIdentity, string) ([]byte, error)
 	ExportTaskFile    func(v1alpha1.SandboxClaimBackendIdentity, string) ([]byte, error)
@@ -58,7 +59,7 @@ func RunFilesystem(t *testing.T, newFixture func(t *testing.T) FilesystemFixture
 
 func requireFilesystemFixture(t *testing.T, f FilesystemFixture) {
 	t.Helper()
-	if f.Backend == nil || f.TemplateRef == "" || f.WriteTaskFile == nil || f.ReadTaskFile == nil || f.ExportTaskFile == nil ||
+	if f.Backend == nil || f.TemplateRef == "" || f.PrepareTaskFile == nil || f.WriteTaskFile == nil || f.ReadTaskFile == nil || f.ExportTaskFile == nil ||
 		f.ReadRuntimeFile == nil || f.WriteRuntimeFile == nil || f.OutsideSentinel == nil || f.RuntimeSentinel == nil || f.FailNextTerminate == nil {
 		t.Fatal("filesystem fixture requires backend, task/export/runtime probes, sentinels and termination failure control")
 	}
@@ -66,21 +67,22 @@ func requireFilesystemFixture(t *testing.T, f FilesystemFixture) {
 
 func testFilesystemBeforeStart(t *testing.T, f FilesystemFixture) {
 	alloc := allocateFilesystem(t, f, "fs-before-start")
-	before := f.OutsideSentinel()
-	if err := f.WriteTaskFile(alloc.Identity, "repo/early.txt", []byte("early")); err == nil {
+	prepared := []byte("prepared-before-start")
+	if err := f.PrepareTaskFile(alloc.Identity, "repo/task.txt", prepared); err != nil {
+		t.Fatalf("prepare task file: %v", err)
+	}
+	if _, err := f.ReadTaskFile(alloc.Identity, "repo/task.txt"); err == nil {
+		t.Fatal("existing task file was readable before Start")
+	}
+	if err := f.WriteTaskFile(alloc.Identity, "repo/task.txt", []byte("mutated-before-start")); err == nil {
 		t.Fatal("task write before Start succeeded")
-	}
-	if _, err := f.ReadTaskFile(alloc.Identity, "repo/early.txt"); err == nil {
-		t.Fatal("task read before Start succeeded")
-	}
-	if after := f.OutsideSentinel(); !bytes.Equal(after, before) {
-		t.Fatalf("pre-Start probe changed outside sentinel: before %q after %q", before, after)
 	}
 	if err := f.Backend.Start(alloc.Identity); err != nil {
 		t.Fatalf("start after pre-Start probes: %v", err)
 	}
-	if _, err := f.ReadTaskFile(alloc.Identity, "repo/early.txt"); err == nil {
-		t.Fatal("rejected pre-Start write became visible after Start")
+	got, err := f.ReadTaskFile(alloc.Identity, "repo/task.txt")
+	if err != nil || !bytes.Equal(got, prepared) {
+		t.Fatalf("prepared task file after Start = %q, error = %v, want %q", got, err, prepared)
 	}
 }
 
@@ -219,8 +221,15 @@ func testFilesystemTerminationFailure(t *testing.T, f FilesystemFixture) {
 	if got, err := f.ReadTaskFile(alloc.Identity, "repo/live.txt"); err != nil || !bytes.Equal(got, []byte("still-live")) {
 		t.Fatalf("failed termination/cleanup released task data: %q, %v", got, err)
 	}
+	if _, err := f.Backend.Allocate(runtime.AllocateRequest{ClaimID: "fs-premature-reuse", TemplateRef: f.TemplateRef}); err == nil {
+		t.Fatal("failed termination returned the only worker to reusable capacity")
+	}
 	if _, err := f.Backend.Cleanup(alloc.Identity); err != nil {
 		t.Fatalf("cleanup retry after termination succeeds: %v", err)
+	}
+	replacement := startFilesystem(t, f, "fs-after-termination-retry")
+	if _, err := f.ReadTaskFile(replacement.Identity, "repo/live.txt"); err == nil {
+		t.Fatal("replacement after termination retry inherited prior task data")
 	}
 }
 

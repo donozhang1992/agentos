@@ -53,6 +53,7 @@ func TestRuntimeFilesystemContract(t *testing.T) {
 		return contracttest.FilesystemFixture{
 			Backend:          r,
 			TemplateRef:      testTemplate,
+			PrepareTaskFile:  r.prepareTaskFile,
 			WriteTaskFile:    r.writeTaskFile,
 			ReadTaskFile:     r.readTaskFile,
 			ExportTaskFile:   r.exportTaskFile,

@@ -17,6 +17,25 @@ var errTaskFileNotFound = errors.New("reference filesystem: task file not found"
 
 const referenceRuntimeFile = "/runtime/agent"
 
+// prepareTaskFile models backend preparation before the worker is allowed to
+// start. It lets the contract suite prove that an existing task file is not
+// readable or mutable while the allocation is only Bound.
+func (r *Runtime) prepareTaskFile(id v1alpha1.SandboxClaimBackendIdentity, target string, data []byte) error {
+	a, err := r.allocationFor(id)
+	if err != nil {
+		return err
+	}
+	if a.started || a.terminated || a.released {
+		return fmt.Errorf("prepare filesystem %s: allocation is not awaiting Start", a.claimID)
+	}
+	relative, err := taskRelativePath(a.filesystem.WorkingDirectory, target)
+	if err != nil {
+		return err
+	}
+	a.taskFiles[relative] = append([]byte(nil), data...)
+	return nil
+}
+
 // writeTaskFile is a reference-model probe used by the reusable filesystem
 // contract suite. It is deliberately not part of RuntimeBackend: production
 // agents use ordinary filesystem APIs inside the boundary established by the

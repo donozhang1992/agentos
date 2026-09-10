@@ -81,7 +81,7 @@ func TestFilesystemLocalCompatibility(t *testing.T) {
 	if got := mustReadFile(t, filepath.Join(collector, "result.patch")); !bytes.Equal(got, diff) {
 		t.Fatal("pre-termination export did not survive workspace cleanup")
 	}
-	t.Logf("FS-P1/FS-P2/FS-P3 git=%q go=%q cwd=%s git_diff_bytes=%d command_exits=0 export_sha256=%x workspace_retained=false evidence=local-compatibility-not-isolation", gitVersion, goVersion, workspace, len(diff), gotDigest)
+	t.Logf("FS-P1/FS-P2 git=%q go=%q cwd=%s git_diff_bytes=%d command_exits=0 export_sha256=%x workspace_retained=false evidence=local-compatibility-not-isolation", gitVersion, goVersion, workspace, len(diff), gotDigest)
 }
 
 type fixtureCollector struct {
@@ -237,11 +237,10 @@ func TestCollectFixtureOutputRejectsEscapeLinkAndOversize(t *testing.T) {
 	assertCollectorRejects(t, "escape", func() error { _, err := collectFixtureOutput(workspace, collector, "../outside.txt", 8); return err })
 	assertCollectorRejects(t, "oversize", func() error { _, err := collectFixtureOutput(workspace, collector, "large.bin", 8); return err })
 	assertCollectorRejects(t, "hardlink", func() error { _, err := collectFixtureOutput(workspace, collector, "hardlink.txt", 8); return err })
-	if err := os.Symlink(filepath.Join(root, "outside.txt"), filepath.Join(workspace, "link.txt")); err == nil {
-		assertCollectorRejects(t, "symlink", func() error { _, err := collectFixtureOutput(workspace, collector, "link.txt", 8); return err })
-	} else {
-		t.Logf("symlink fixture unavailable on this host: %v", err)
+	if err := os.Symlink(filepath.Join(root, "outside.txt"), filepath.Join(workspace, "link.txt")); err != nil {
+		t.Fatalf("create symbolic-link fixture: %v", err)
 	}
+	assertCollectorRejects(t, "symlink", func() error { _, err := collectFixtureOutput(workspace, collector, "link.txt", 8); return err })
 	if entries, err := os.ReadDir(collector); err != nil || len(entries) != 0 {
 		t.Fatalf("rejected export wrote collector data: entries=%v error=%v", entries, err)
 	}
