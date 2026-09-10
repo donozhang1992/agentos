@@ -45,12 +45,11 @@ Make the upstream identity boundary explicit in the deterministic local referenc
 
 - ClaimRequest remains identity-free; YAML and JSON retain one intent-only schema.
 - Reuse Principal, Action, Decision, Evidence and IssuedState rather than creating a parallel evidence model.
-- Consume #27 gate/policy from its exact accepted head; do not change #96 or copy its implementation into this planning branch.
+- Consume the merged #27 gate/policy; do not copy or reinterpret its implementation.
 - Preserve #40's backend-neutral composition and keep provider types out of shared contracts.
 - Inspectable reference output is not append-only storage, claim issuance or real-backend proof.
 
 ## Open Decisions
 
-- Owner/Reviewer packet approval and exact #96 head acceptance are required before implementation; see [task blockers](task.md#decisions-and-blockers).
-- Resolve upstream evidence-contract findings through #27 before relying on affected cases; fabricate neither unavailable-policy nor claim identities.
+- The previously stacked #96 dependency is resolved; #42 is reconciled with the merged gate contract on `main`.
 - Coordinate exact smoke entrypoint syntax with #41 during implementation. It must preserve out-of-band setup and have executable commands recorded before implementation review.

@@ -21,8 +21,7 @@ Additional task-specific context:
 - [AIDLC](../../docs/development/AIDLC.md#adaptive-planning-depth)
 - [Start a GitHub Ticket](../../docs/harness/playbooks.md#start-a-github-ticket) and [Add a User-Facing Demo Slice](../../docs/harness/playbooks.md#add-a-user-facing-demo-slice)
 - [ClaimRequest parser](../../api/v1alpha1/claim_request.go), [canonical Principal/Decision/Evidence](../../api/v1alpha1/sandbox_claim.go), and [composition root](../../internal/app/runtime.go)
-- [#27 / PR #96](https://github.com/wunderforge/agenova/pull/96), including its current reviews
-- Inspected #96 snapshot: [gate](https://github.com/wunderforge/agenova/blob/3610cf0bd4c18a30dc46e1cd50302972128e720d/internal/authorization/authorization.go), [spec](https://github.com/wunderforge/agenova/blob/3610cf0bd4c18a30dc46e1cd50302972128e720d/work/0027-authorize-assignment/spec.md), and [tests](https://github.com/wunderforge/agenova/blob/3610cf0bd4c18a30dc46e1cd50302972128e720d/internal/authorization/authorization_test.go)
+- [Merged #27 / PR #96](https://github.com/wunderforge/agenova/pull/96): [gate](../../internal/authorization/authorization.go), [spec](../0027-authorize-assignment/spec.md), and [tests](../../internal/authorization/authorization_test.go)
 - [#40 composition packet](../0040-cli-composition-root/task.md); [#41 submission owner](https://github.com/wunderforge/agenova/issues/41) is a coordination boundary, not extra implementation scope.
 
 ## Scope
@@ -89,11 +88,9 @@ Out of scope:
 ## Decisions and Blockers
 
 - Planning depth: Task + Spec, the minimum for shared authority semantics; no separate design document.
-- Inspection on 2026-09-08: planning main and #96 base `main` both resolve to `3365cd0e37d181146dd5b6f8e65a58e03b6fb39e`. Open #96 head `codex/e2-t2-authorize-assignment` resolves to `3610cf0bd4c18a30dc46e1cd50302972128e720d`; the Owner later accepted that exact revision for #42.
-- #42 lists #27 and #40 as dependencies; #40 was closed at inspection. GitHub remains authoritative for live status and assignments.
-- Owner approval and acceptance of #96 head `3610cf0bd4c18a30dc46e1cd50302972128e720d` were recorded in #42 on 2026-09-08 before implementation.
-- Stack rule: planning may target current main. Later implementation must start from the exact accepted #96 head, carry only this packet forward, and target `codex/e2-t2-authorize-assignment` until #27 merges. If the head moves, inspect and record replacement acceptance before building on it. After #27 merges, reconcile with main and verify only #42 changes remain. Do not copy #27 implementation or modify #96.
-- #96 review findings cover unavailable-policy denial evidence and whitespace-only policy rule fields. Resolution belongs upstream. Canonical A/B evidence uses a real active versioned policy; never fabricate a policy reference to bypass validation.
+- #42 originally stacked on the Owner-approved #96 head. PR #96 merged on 2026-09-10, and this branch was then reconciled with the merged contract on `main`.
+- #40 and #27 dependencies are resolved. GitHub remains authoritative for live status and assignments.
+- Canonical A/B evidence uses a real active versioned policy; it never fabricates a policy or claim identity.
 - The implementation PR uses `Closes #42` to satisfy the PR-body contract, remains draft, and must not merge before implementation review.
 - Focused G2/G3 passed with `go test -count=1 -v ./internal/app/... ./internal/authorization/... ./api/v1alpha1`; the shared YAML SHA-256 was `778d101e8ef88c245fe3433d1901020b16cd138a4848c921e5a7e4daccbe7915` for both principals. Team A produced Allow and one continuation; Team B produced Deny, zero continuations, and no claim.
 - Repository baseline passed with `GOFLAGS=-buildvcs=false` and `CGO_ENABLED=0`: `pwsh -NoLogo -NoProfile -File scripts/check.ps1 -All`. The flag avoids nested-worktree VCS stamping only; it does not skip repository checks. Local race execution is blocked because this Windows host has no C compiler; CI owns the race result.

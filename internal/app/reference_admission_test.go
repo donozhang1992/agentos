@@ -199,7 +199,7 @@ type evaluatorSpy struct {
 	calls int
 }
 
-func (s *evaluatorSpy) Evaluate(authorization.Request) (v1alpha1.Decision, error) {
+func (s *evaluatorSpy) Evaluate(input authorization.Request) (authorization.Evaluation, error) {
 	s.calls++
-	return v1alpha1.Decision{Result: v1alpha1.DecisionResultDeny}, nil
+	return (authorization.Authorizer{}).Evaluate(input)
 }
