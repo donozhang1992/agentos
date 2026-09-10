@@ -10,11 +10,11 @@ Kubernetes Agent Sandbox is the first real substrate used to test the `RuntimeBa
 - A selected runtime template can have a `SandboxWarmPool`.
 - One Agenova claim maps to one upstream sandbox acquisition.
 - Upstream sandbox identity is returned as backend evidence.
-- Upstream readiness is `Bound`-level infrastructure evidence. It does not prove work start: the legacy spike `StartClaim` still treats `Ready=True` as `Running` (a known gap kept for the old integration path), while the reduced `RuntimeBackend` contract reports `Start` as unsupported.
+- Upstream readiness is `Bound`-level infrastructure evidence. Both `Start` and the legacy `StartClaim` report unsupported work-start semantics; neither promotes readiness to Running.
 - Claim deletion triggers sandbox cleanup and warm-pool replenishment.
 - Upstream API details remain confined to `internal/runtime/agentsandbox`.
 
-The path was exercised with Agent Sandbox v0.4.6 on a local kind cluster. It must be re-run when promoting or changing the adapter.
+The earlier spike was exercised with Agent Sandbox v0.4.6 on a local kind cluster. That historical run does not verify the reduced contract or the changed legacy start behavior. The current integration gate must be re-run; see the [current environment blocker](../evidence/30/agent-sandbox/summary.md).
 
 ## Reduced RuntimeBackend Contract (Ticket #30)
 
@@ -43,6 +43,18 @@ A worker that the controller assigns to a second claim while it still belongs to
 
 Recovery retains its worker reservation across deletion failures and until release is confirmed, preventing another local allocation from acquiring a worker still being removed. These reservations do not expose a usable allocation identity through Observe, Start, Terminate, or Cleanup. A changed or missing binding on a retained claim also stops recovery before deletion.
 
+### Legacy compatibility audit (Ticket #30)
+
+| Concrete methods | Current interpretation |
+| --- | --- |
+| AddTemplate / AddWarmPool | Adapter setup, outside the shared contract. |
+| AddClaim / BindClaim | Legacy local Pending/Bound bookkeeping; allocation correlation in the reduced path uses Allocate. |
+| StartClaim | Returns ErrUnsupported after checking the legacy claim; a Ready worker remains Bound. |
+| SucceedClaim / FailClaim / ExpireClaim | Retained for source compatibility. Their local phases and replacement flags are not verified work or cleanup evidence; new application code must use its own outcome state and the reduced resource operations. |
+| Claim / PoolStatus | Legacy local/approximate views, not the future authoritative run-service or backend evidence API. |
+
+The integration gate now checks Allocate, identity-matched Observe, explicit unsupported Start/Terminate, and independent absence of both claim and sandbox after Cleanup. It also checks cleanup without work start and idempotent release. The former expiry bookkeeping case is preserved as a unit regression. Historical assertions that Ready proves Running or deletion proves replacement are removed from the integration gate.
+
 ## Known Gaps
 
 1. Upstream claims use conditions rather than Agenova work phases.
@@ -61,6 +73,8 @@ Prerequisites:
 - a reachable cluster context;
 - compatible Agent Sandbox CRDs and controller;
 - permission to create and delete test resources.
+
+The harness requires an explicit context, uses unique resource names for each run, and bounds every kubectl command. If allocation identity or resource release cannot be confirmed, it retains resources for manual recovery rather than bypassing adapter checks with a blind delete.
 
 Run:
 

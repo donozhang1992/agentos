@@ -18,7 +18,6 @@ var _ runtime.RuntimeBackend = (*SpikeAdapter)(nil)
 
 const (
 	defaultBindTimeout    = 60 * time.Second
-	defaultStartTimeout   = 120 * time.Second
 	defaultCleanupTimeout = 60 * time.Second
 	pollInterval          = 1 * time.Second
 )
@@ -249,10 +248,8 @@ func (a *SpikeAdapter) BindClaim(name string) error {
 	return fmt.Errorf("bind timeout after %s: claim %s not assigned a sandbox", defaultBindTimeout, name)
 }
 
-// StartClaim polls the upstream controller until the sandbox pod is running,
-// then transitions local state to Running.
-//
-// The upstream controller drives pod startup; this call only observes it.
+// StartClaim is retained for source compatibility, but cannot acknowledge
+// work start. Readiness alone must never move the legacy claim to Running.
 func (a *SpikeAdapter) StartClaim(name string) error {
 	if err := a.requirePhase(name, v1alpha1.ClaimPhaseBound); err != nil {
 		return err
@@ -267,23 +264,7 @@ func (a *SpikeAdapter) StartClaim(name string) error {
 		return fmt.Errorf("claim %s is Bound but has no sandboxID; call BindClaim first", name)
 	}
 
-	deadline := time.Now().Add(defaultStartTimeout)
-	for time.Now().Before(deadline) {
-		var sc upstreamSandboxClaim
-		if err := a.kube.get("sandboxclaims", resourceName("claim", name), &sc); err != nil {
-			return fmt.Errorf("get claim status: %w", err)
-		}
-		if hasCondition(sc.Status.Conditions, conditionTypeReady, conditionStatusTrue) {
-			a.mu.Lock()
-			entry := a.claims[name]
-			entry.phase = v1alpha1.ClaimPhaseRunning
-			a.claims[name] = entry
-			a.mu.Unlock()
-			return nil
-		}
-		time.Sleep(pollInterval)
-	}
-	return fmt.Errorf("start timeout after %s: claim %s sandbox not ready", defaultStartTimeout, name)
+	return fmt.Errorf("start claim %s: %w: upstream readiness does not acknowledge work start", name, runtime.ErrUnsupported)
 }
 
 // SucceedClaim transitions local state to Succeeded and deletes the upstream

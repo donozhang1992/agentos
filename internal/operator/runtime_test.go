@@ -32,6 +32,15 @@ func TestRuntimeBackendContract(t *testing.T) {
 				}
 			},
 			Started: r.Started,
+			FailNextStart: func(id v1alpha1.SandboxClaimBackendIdentity, err error) {
+				injectWorkerFailure(t, r, id, "start", err)
+			},
+			FailNextTerminate: func(id v1alpha1.SandboxClaimBackendIdentity, err error) {
+				injectWorkerFailure(t, r, id, "terminate", err)
+			},
+			FailNextCleanup: func(id v1alpha1.SandboxClaimBackendIdentity, err error) {
+				injectWorkerFailure(t, r, id, "cleanup", err)
+			},
 		}
 	})
 }

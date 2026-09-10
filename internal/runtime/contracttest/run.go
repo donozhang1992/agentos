@@ -26,6 +26,8 @@ import (
 // without them the "known but not ready" cases cannot be proven and Run fails
 // instead of skipping. Started is an optional probe; when nil only the probe
 // assertions are omitted, the behavioral start assertions always run.
+// Failure hooks must inject one resource-operation error before side effects;
+// wrapping RuntimeBackend itself would not test backend state handling.
 type Fixture struct {
 	Backend     runtime.RuntimeBackend
 	TemplateRef string
@@ -36,6 +38,10 @@ type Fixture struct {
 	ReleaseReadiness func(id v1alpha1.SandboxClaimBackendIdentity)
 	// Started reports whether the backend has acknowledged work start.
 	Started func(id v1alpha1.SandboxClaimBackendIdentity) bool
+
+	FailNextStart     func(id v1alpha1.SandboxClaimBackendIdentity, err error)
+	FailNextTerminate func(id v1alpha1.SandboxClaimBackendIdentity, err error)
+	FailNextCleanup   func(id v1alpha1.SandboxClaimBackendIdentity, err error)
 }
 
 // Run exercises the reduced RuntimeBackend contract. newFixture must return a
@@ -55,6 +61,10 @@ func Run(t *testing.T, newFixture func(t *testing.T) Fixture) {
 		{"observe never implies start and start is explicit once", testStartIsExplicitOnce},
 		{"terminate before start cancels idempotently and blocks start", testTerminateBeforeStart},
 		{"cleanup is idempotent and blocks start and terminate", testCleanupIdempotent},
+		{"failed start is not acknowledged and can be retried", testStartFailure},
+		{"failed termination remains retryable", testTerminateFailure},
+		{"failed cleanup preserves identity and retries without restarting", testCleanupFailure},
+		{"cleanup stops when implicit termination fails", testCleanupTerminationFailure},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
@@ -75,6 +85,101 @@ func requireFixture(t *testing.T, f Fixture) {
 	}
 	if f.HoldReadiness == nil || f.ReleaseReadiness == nil {
 		t.Fatal("fixture: HoldReadiness and ReleaseReadiness are required to prove not-ready behavior")
+	}
+	if f.FailNextStart == nil || f.FailNextTerminate == nil || f.FailNextCleanup == nil {
+		t.Fatal("fixture: start, termination and cleanup failure hooks are required")
+	}
+}
+
+func testStartFailure(t *testing.T, f Fixture) {
+	id := allocate(t, f, "start-failure").Identity
+	before := observe(t, f, id)
+	cause := errors.New("injected worker-start failure")
+	f.FailNextStart(id, cause)
+	if err := f.Backend.Start(id); !errors.Is(err, cause) {
+		t.Fatalf("start error = %v, want injected cause", err)
+	}
+	if after := observe(t, f, id); after != before {
+		t.Fatalf("failed start changed observation: before %+v after %+v", before, after)
+	}
+	if f.Started != nil && f.Started(id) {
+		t.Fatal("failed start was acknowledged")
+	}
+	if err := f.Backend.Start(id); err != nil {
+		t.Fatalf("retry start: %v", err)
+	}
+	if err := f.Backend.Start(id); !errors.Is(err, runtime.ErrAlreadyStarted) {
+		t.Fatalf("duplicate start after retry: %v", err)
+	}
+}
+
+func testTerminateFailure(t *testing.T, f Fixture) {
+	id := allocate(t, f, "terminate-failure").Identity
+	if err := f.Backend.Start(id); err != nil {
+		t.Fatal(err)
+	}
+	cause := errors.New("injected worker-termination failure")
+	f.FailNextTerminate(id, cause)
+	if err := f.Backend.Terminate(id); !errors.Is(err, cause) {
+		t.Fatalf("terminate error = %v, want injected cause", err)
+	}
+	if obs := observe(t, f, id); obs.Identity != id || obs.Released || obs.Replaced {
+		t.Fatalf("termination failure fabricated release: %+v", obs)
+	}
+	if err := f.Backend.Terminate(id); err != nil {
+		t.Fatalf("retry terminate: %v", err)
+	}
+	if err := f.Backend.Start(id); !errors.Is(err, runtime.ErrTerminated) {
+		t.Fatalf("start after retried termination: %v", err)
+	}
+	if res, err := f.Backend.Cleanup(id); err != nil || !res.Released {
+		t.Fatalf("cleanup after termination retry: %+v %v", res, err)
+	}
+}
+
+func testCleanupFailure(t *testing.T, f Fixture) {
+	id := allocate(t, f, "cleanup-failure").Identity
+	if err := f.Backend.Start(id); err != nil {
+		t.Fatal(err)
+	}
+	cause := errors.New("injected resource-release failure")
+	f.FailNextCleanup(id, cause)
+	res, err := f.Backend.Cleanup(id)
+	if !errors.Is(err, cause) || res.Identity != id || res.Released || res.Replaced {
+		t.Fatalf("cleanup failure must retain identity without release evidence: %+v %v", res, err)
+	}
+	if obs := observe(t, f, id); obs.ClaimID != "cleanup-failure" || obs.Identity != id || obs.Released || obs.Replaced {
+		t.Fatalf("failed cleanup lost correlation or fabricated release: %+v", obs)
+	}
+	if err := f.Backend.Start(id); !errors.Is(err, runtime.ErrTerminated) {
+		t.Fatalf("failed cleanup must not allow terminated work to restart: %v", err)
+	}
+	if err := f.Backend.Terminate(id); err != nil {
+		t.Fatalf("termination must remain idempotent after cleanup failure: %v", err)
+	}
+	res, err = f.Backend.Cleanup(id)
+	if err != nil || res.Identity != id || !res.Released {
+		t.Fatalf("cleanup retry: %+v %v", res, err)
+	}
+	if again, err := f.Backend.Cleanup(id); err != nil || again != res {
+		t.Fatalf("cleanup after successful retry: %+v %v", again, err)
+	}
+}
+
+func testCleanupTerminationFailure(t *testing.T, f Fixture) {
+	id := allocate(t, f, "cleanup-stop-failure").Identity
+	cause := errors.New("injected implicit-termination failure")
+	f.FailNextTerminate(id, cause)
+	res, err := f.Backend.Cleanup(id)
+	if !errors.Is(err, cause) || res.Identity != id || res.Released || res.Replaced {
+		t.Fatalf("implicit termination failure must not report cleanup: %+v %v", res, err)
+	}
+	if obs := observe(t, f, id); obs.Identity != id || obs.Released || obs.Replaced {
+		t.Fatalf("failed implicit termination fabricated cleanup: %+v", obs)
+	}
+	res, err = f.Backend.Cleanup(id)
+	if err != nil || res.Identity != id || !res.Released {
+		t.Fatalf("cleanup retry after failed termination: %+v %v", res, err)
 	}
 }
 

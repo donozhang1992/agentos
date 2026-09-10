@@ -16,11 +16,20 @@ import (
 // BackendName is the identity Backend value reported by the reference runtime.
 const BackendName = "memory"
 
+// workerPool is the resource operation seam for an allocated worker. Keeping
+// it with the allocation also pins operations to the pool that issued it.
+type workerPool interface {
+	MarkRunning(workerID, claimID string) error
+	MarkFailed(workerID, claimID string) error
+	Replace(workerID, claimID string) (sandbox.Sandbox, error)
+}
+
 // allocation is the reference runtime's resource bookkeeping for one reduced
 // contract allocation. It never records application phase or authority.
 type allocation struct {
 	claimID    string
 	poolName   string
+	pool       workerPool
 	workerID   string
 	ready      bool
 	started    bool
@@ -73,6 +82,7 @@ func (r *Runtime) Allocate(req runtime.AllocateRequest) (runtime.Allocation, err
 	a := &allocation{
 		claimID:  req.ClaimID,
 		poolName: poolName,
+		pool:     pool,
 		workerID: claimed.ID,
 		ready:    !held,
 	}
@@ -117,7 +127,7 @@ func (r *Runtime) Start(id v1alpha1.SandboxClaimBackendIdentity) error {
 	case !a.ready:
 		return fmt.Errorf("start %s: %w", a.claimID, runtime.ErrNotReady)
 	}
-	if err := r.pools[a.poolName].MarkRunning(a.workerID, a.claimID); err != nil {
+	if err := a.pool.MarkRunning(a.workerID, a.claimID); err != nil {
 		return fmt.Errorf("start %s: %w", a.claimID, err)
 	}
 	a.started = true
@@ -146,7 +156,7 @@ func (r *Runtime) Terminate(id v1alpha1.SandboxClaimBackendIdentity) error {
 // It is NOT the application Failed outcome: FailClaim is never called and no
 // BackendClaim phase changes here.
 func (r *Runtime) terminateWorker(a *allocation) error {
-	if err := r.pools[a.poolName].MarkFailed(a.workerID, a.claimID); err != nil {
+	if err := a.pool.MarkFailed(a.workerID, a.claimID); err != nil {
 		return fmt.Errorf("terminate %s: %w", a.claimID, err)
 	}
 	a.terminated = true
@@ -172,7 +182,7 @@ func (r *Runtime) Cleanup(id v1alpha1.SandboxClaimBackendIdentity) (runtime.Clea
 			return result, fmt.Errorf("cleanup %s: %w", a.claimID, err)
 		}
 	}
-	if _, err := r.pools[a.poolName].Replace(a.workerID, a.claimID); err != nil {
+	if _, err := a.pool.Replace(a.workerID, a.claimID); err != nil {
 		return result, fmt.Errorf("cleanup %s: %w", a.claimID, err)
 	}
 	a.released = true

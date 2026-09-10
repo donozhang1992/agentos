@@ -1,0 +1,34 @@
+Command: ['pwsh', '-File', 'scripts/check.ps1', '-All']
+Exit: 0
+
+[pass] current documentation and harness files exist; retired paths are absent
+[pass] open-source license, attribution, source headers, and module path are consistent
+[pass] product authorities, AIDLC routing, and task-packet structure are present
+[pass] local Markdown links resolve
+[pass] backend-specific Agent Sandbox shape stays inside its adapter
+[pass] command behavior and shared contracts stay provider-neutral
+Created task packet: /Users/tomtianys/Workspace/Projects/P3-Agenova-e3/.tmp/task-scaffold-contract/9999-contract-check
+Read the linked Issue, replace every TODO marker, and stop for Owner/Reviewer approval before implementation.
+[pass] issue, task-packet, PR, and evidence delivery contracts are mechanically validated
+[pass] current Go files are formatted
+[pass] Go module metadata is tidy
+[pass] go vet ./...
+ok  	github.com/wunderforge/agenova/api/v1alpha1	3.252s
+ok  	github.com/wunderforge/agenova/cmd/agenova	7.579s
+ok  	github.com/wunderforge/agenova/harness/e2e	3.356s
+ok  	github.com/wunderforge/agenova/harness/fixtures/contract/v0	4.432s
+ok  	github.com/wunderforge/agenova/internal/app	3.584s
+ok  	github.com/wunderforge/agenova/internal/cli	3.468s
+ok  	github.com/wunderforge/agenova/internal/facts	4.761s
+ok  	github.com/wunderforge/agenova/internal/governance	5.099s
+ok  	github.com/wunderforge/agenova/internal/modelgateway	5.163s
+ok  	github.com/wunderforge/agenova/internal/operator	5.267s
+ok  	github.com/wunderforge/agenova/internal/policy	3.945s
+?   	github.com/wunderforge/agenova/internal/runtime	[no test files]
+ok  	github.com/wunderforge/agenova/internal/runtime/agentsandbox	5.385s
+?   	github.com/wunderforge/agenova/internal/runtime/contracttest	[no test files]
+?   	github.com/wunderforge/agenova/internal/sandbox	[no test files]
+ok  	github.com/wunderforge/agenova/internal/toolgateway	3.883s
+[pass] go test ./...
+ok  	github.com/wunderforge/agenova/harness/integration/agentsandbox	0.166s [no tests to run]
+[pass] Agent Sandbox integration package compiles

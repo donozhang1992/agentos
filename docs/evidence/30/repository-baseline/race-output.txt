@@ -1,0 +1,19 @@
+Command: ['go', 'test', '-count=1', '-race', './...']
+Exit: 0
+
+ok  	github.com/wunderforge/agenova/api/v1alpha1	1.564s
+ok  	github.com/wunderforge/agenova/cmd/agenova	7.816s
+ok  	github.com/wunderforge/agenova/harness/e2e	2.288s
+ok  	github.com/wunderforge/agenova/harness/fixtures/contract/v0	3.280s
+ok  	github.com/wunderforge/agenova/internal/app	2.646s
+ok  	github.com/wunderforge/agenova/internal/cli	3.298s
+ok  	github.com/wunderforge/agenova/internal/facts	3.724s
+ok  	github.com/wunderforge/agenova/internal/governance	4.136s
+ok  	github.com/wunderforge/agenova/internal/modelgateway	4.490s
+ok  	github.com/wunderforge/agenova/internal/operator	4.830s
+ok  	github.com/wunderforge/agenova/internal/policy	6.661s
+?   	github.com/wunderforge/agenova/internal/runtime	[no test files]
+ok  	github.com/wunderforge/agenova/internal/runtime/agentsandbox	6.750s
+?   	github.com/wunderforge/agenova/internal/runtime/contracttest	[no test files]
+?   	github.com/wunderforge/agenova/internal/sandbox	[no test files]
+ok  	github.com/wunderforge/agenova/internal/toolgateway	6.273s
