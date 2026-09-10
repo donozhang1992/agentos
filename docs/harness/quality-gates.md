@@ -36,8 +36,17 @@ This checks:
 - Apache-2.0 metadata, third-party attribution, SPDX source headers, and the public Go module path;
 - retired phase/personal-doc paths are absent;
 - stable architecture authority and backend-neutral source boundaries without requiring the same prose in several documents;
+- integration entry-point rejection without an explicit context, tested with isolated check doubles and no cluster access;
 - Go formatting, module consistency, `go vet`, and `go test ./...`;
 - the reference multi-agent E2E included in the Go test tree.
+- frontend canonical binding drift and fixture parity, TypeScript checks, component/adapter tests, production build, and Chromium smoke with screenshots.
+
+Frontend prerequisites: Node.js 24, `npm --prefix ui ci`, and
+`npm --prefix ui run browsers:install`. Linux CI installs Chromium system
+dependencies using Playwright's `--with-deps` option. See the
+[fixture storyboard](../../ui/README.md) for focused commands. `-All`, PR and
+Main run the same frontend gate; `-Docs` and `-Unit` remain focused on docs
+and Go respectively. CI preserves `.tmp/ui-smoke` as rendered evidence.
 
 ## Pull Request Automation
 
@@ -80,6 +89,10 @@ Not part of the PR or Main profile because it requires an external cluster:
 ```
 
 A missing cluster is a blocker, not a passing backend result.
+
+Both `-Profile Backend` and the focused `-Integration` switch require a non-empty
+`-KubeContext`. Omitted or whitespace-only values fail before any checks run;
+there is no default cluster context.
 
 The real-backend gate remains manual until cluster creation and Agent Sandbox
 installation are deterministic in CI. Adapter PRs must include its output or

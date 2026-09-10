@@ -20,7 +20,7 @@ Update this snapshot only when merged behavior, accepted evidence, or a known im
 | Execute through gateways | Partial | Authorization methods exist; there is no network gateway or real upstream proxy path. |
 | Record claim-scoped facts | Reference only | In-memory Tool, Model, and Runtime fact store; no durable storage or denial facts. |
 | End authority with the claim | Implemented in reference | Terminal and child-out-of-scope negative tests pass. |
-| Query complete evidence | Not implemented as a product surface | Tests can inspect facts; CLI/API/UI query output does not exist. |
+| Query complete evidence | Fixture UI foundation only | React renders canonical v0 fixtures through a typed evidence source; no live API or complete evidence query path. See [fixture storyboard](../ui/README.md). |
 | Use replaceable backends | Contract exists | Only the in-memory backend fully satisfies the contract; Agent Sandbox remains a spike with known gaps. |
 
 ## Implemented and Tested
@@ -56,7 +56,7 @@ It is not production-ready. Terminal outcomes are held in adapter memory, pool s
 - No Memory Interface implementation.
 - No OpenTelemetry integration.
 - No CRD generation, Helm chart, release image, or install flow.
-- No read-only evidence API or React claim console.
+- No read-only evidence API or live React claim console. A fixture-backed React storyboard renders request intent, Allow/Running, pre-claim Deny and missing/unknown source diagnostics; contract, component and browser checks run in the shared baseline.
 
 ## Next Delivery Slice
 
