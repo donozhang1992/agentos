@@ -4,7 +4,7 @@
 
 - The shared runtime seam now reports one backend-selected, claim-scoped working directory and an explicit filesystem evidence level.
 - The reference backend passes reusable model cases for pre-Start denial, task read/write, readable-but-not-writable runtime data, traversal/direct outside denial, replacement freshness, post-termination export denial, and cleanup refusal while termination remains incomplete. These cases are labelled `Simulated`; they do not claim process isolation.
-- A separate trusted local fixture successfully initialized and committed a small Git repository, edited it, ran `go test ./...`, exported one bounded regular file before termination, rejected a post-termination export, deleted the workspace, and retained only the acknowledged bytes and digest. Its subprocess environment is allowlisted and excludes host credentials/helpers; symbolic links, hard links, escape paths and oversize outputs are rejected. This proves ordinary tool compatibility, not isolation.
+- A separate trusted local fixture successfully initialized and committed a small Git repository, edited it, ran `go test ./...`, exported one bounded regular file, closed its test collector, rejected a later collection attempt, deleted the workspace, and retained only the acknowledged bytes and digest. Its subprocess environment is allowlisted and excludes host credentials/helpers; symbolic links, hard links, escape paths and oversize outputs are rejected. This proves ordinary tool and collector compatibility, not worker termination or isolation.
 - The Agent Sandbox adapter reports `Unsupported` until #48 maps the substrate and #51 supplies real worker isolation evidence.
 
 ## Commands

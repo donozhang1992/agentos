@@ -64,12 +64,12 @@ func TestFilesystemLocalCompatibility(t *testing.T) {
 		t.Fatalf("outside sentinel changed: %q", got)
 	}
 	writeFixtureFile(t, filepath.Join(workspace, "unexported.txt"), []byte("must-not-export"))
-	outputCollector.terminate()
+	outputCollector.close()
 	if _, err := outputCollector.collect("unexported.txt"); err == nil {
-		t.Fatal("FS-N7 post-termination export succeeded")
+		t.Fatal("collector accepted output after closure")
 	}
 	if _, err := os.Stat(filepath.Join(collector, "unexported.txt")); !os.IsNotExist(err) {
-		t.Fatalf("FS-N7 post-termination output reached collector: %v", err)
+		t.Fatalf("output attempted after collector closure reached destination: %v", err)
 	}
 
 	if err := os.RemoveAll(workspace); err != nil {
@@ -91,11 +91,11 @@ type fixtureCollector struct {
 	active      bool
 }
 
-func (c *fixtureCollector) terminate() { c.active = false }
+func (c *fixtureCollector) close() { c.active = false }
 
 func (c *fixtureCollector) collect(relative string) ([]byte, error) {
 	if !c.active {
-		return nil, fmt.Errorf("fixture output export is closed after termination")
+		return nil, fmt.Errorf("fixture output collector is closed")
 	}
 	return collectFixtureOutput(c.workspace, c.destination, relative, c.limit)
 }
