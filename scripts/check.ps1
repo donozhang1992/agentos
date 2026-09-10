@@ -7,7 +7,7 @@ param(
   [switch]$Unit,
   [switch]$Integration,
   [switch]$Race,
-  [string]$KubeContext = "kind-agenova-k8s-lab",
+  [string]$KubeContext,
   [string]$Namespace = "default"
 )
 
@@ -55,6 +55,10 @@ switch ($Profile) {
   }
 }
 
+if ($Integration -and [string]::IsNullOrWhiteSpace($KubeContext)) {
+  Fail "integration requires explicit -KubeContext"
+}
+
 if (-not ($Fast -or $All -or $Docs -or $Unit -or $Integration)) {
   $All = $true
 }
@@ -72,6 +76,7 @@ if ($All -or $Docs) {
   Test-RuntimeBoundary
   Test-CLICompositionBoundary
   Test-DeliveryContracts
+  & (Join-Path $PSScriptRoot "tests/check-context.ps1")
 }
 
 if ($All -or $Unit) {

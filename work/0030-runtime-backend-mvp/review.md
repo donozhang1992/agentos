@@ -2,8 +2,8 @@
 
 - Date: 2026-09-10
 - Scope: PR #106's complete diff against base `b060842e67883e3f5108d73701903998b4b77f67`, including its approved packet, runtime/adapter code, consumers, tests and evidence.
-- Code revision: `91977b83e92faaa2cde39388e3f9b44684714151` plus the cleanup identity fix recorded by the [source manifest](../../docs/evidence/30/reference-contract/source-sha256.txt).
-- Status: technical review and #31 handoff complete. The reproduced cleanup finding is fixed; build, both focused groups, full race and all 12 repository checks passed on the final Go sources. Independent human review and acceptance remain outstanding.
+- Code revision: `e2e8af43fa624544ed3239e1b4994c160d2cead2` plus the explicit-context wrapper fix. Go sources match the [Go manifest](../../docs/evidence/30/reference-contract/source-sha256.txt); the changed scripts are pinned by the [wrapper manifest](../../docs/evidence/30/repository-baseline/source-sha256.txt).
+- Status: technical review and #31 handoff complete. The cleanup and wrapper-context findings are fixed. Build, both focused groups and full race passed on the unchanged Go sources; the nine wrapper regression cases and all 13 repository checks passed after the wrapper fix. Independent human review and acceptance remain outstanding.
 - Downstream surface: [handoff to #31](handoff-0031.md).
 
 ## Acceptance and evidence map
@@ -25,6 +25,10 @@ Commands and raw results are in [contract evidence](../../docs/evidence/30/refer
 Ordinary Cleanup previously deleted the upstream claim without re-reading its binding. When that claim had switched to a second allocation's worker, deleting it could destroy that other worker even though release confirmation still checked the original identity. Recovery and Observe already checked the binding; normal Cleanup did not.
 
 Cleanup now verifies a present claim still carries its recorded worker before deletion. Changed, missing or unreadable binding returns an error with identity retained and no delete. If the claim is already absent, cleanup only confirms absence of both recorded resources. Four regression variants cover another live allocation's worker, missing binding, empty worker and query failure; each checks zero destructive calls and a successful retry after the original binding is restored. The regression failed on the pre-fix source and passed after the fix.
+
+## Follow-up: explicit context at the wrapper boundary
+
+The [automated follow-up review](https://github.com/wunderforge/agenova/pull/106#discussion_r3977957850) found that `check.ps1` defaulted to a named kind context and therefore bypassed the Go harness's empty-context guard. The default is removed and both integration modes reject blank context before any checks. A child-process test copies the real entry point and substitutes only its check modules: all six omitted/empty/whitespace cases reject with zero check calls, both explicit cases forward the exact context and namespace, and ordinary `-All` remains usable without a cluster. The test failed on the old wrapper and passes after the fix. The repository baseline now runs it automatically.
 
 ## Bounds of this review and handoff
 
