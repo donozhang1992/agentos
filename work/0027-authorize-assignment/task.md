@@ -103,7 +103,8 @@ Out of scope:
 - Resolved dependency: merged #25 defines canonical `Principal.Team`, `Action`, `Decision`, `PolicyReference`, and pre-claim `Evidence` shapes.
 - Resolved producer alignment pending merge: #26 PR #72 maps exact trusted team, action, project, and template fields through `policy.Match`; #27 will consume those types after #72 merges.
 - Decision: add optional `spec.projectRef` to the shared ClaimRequest shape and canonical fixture; assignment admission requires it through `Action.Project`. It is caller-requested context, grants no authority, and is never inferred from task input or repository naming.
-- Dependency: this PR is stacked on #72 until the PolicyBundle change merges to `main`.
+- Resolved dependency: #72 is merged and this branch is synchronized with its PolicyBundle implementation.
+- Review hardening: Gate validates the complete request before evaluator dispatch, accepts only an Evaluation bound to that exact request, and produces context-and-policy-specific decision IDs.
 
 ## Verification Evidence
 

@@ -92,4 +92,4 @@ The production entry point may remain one assignment-resolution operation that c
 1. **Resolved — Principal match in PolicyBundle:** merged #25 exposes canonical trusted `Principal.Team`; #26 PR #72 implements exact `policy.Match.Team` matching without wildcards or a generic selector engine. #27 consumes that value only from the trusted out-of-band Principal.
 2. **Resolved — Requested project source:** add optional `spec.projectRef: payments` to ClaimRequest and require it at assignment admission through `Action.Project`. It is caller-requested, validated authorization context, never authority by itself, and is not derived from `task.input.repository`.
 
-The implementation consumes #72 directly while the PRs are stacked; #72 must merge before this Ticket can merge cleanly to `main`.
+The implementation consumes the PolicyBundle contract merged through #72.
