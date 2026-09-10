@@ -80,15 +80,14 @@ Out of scope:
 - [x] Split the lifecycle into `smoke` (create + observe Ready, fixtures left in place for inspection) and `teardown` (delete claim/pool/template, assert pods -> 0, drop the namespace); `all` runs `up -> smoke -> teardown -> down`.
 - [x] Remove the compare command/report from #50 per the independent review; retain the prior implementation in Git history for a follow-up.
 - [x] Add the minimal manifests and the runbook; add the pointer line in `docs/backends/agent-sandbox.md`.
-- [ ] Re-run the corrected final committed script twice on real Docker/kind and replace the explicit evidence blocker.
-- [x] Run the isolated shell regression gate and repository baseline on the corrected script (2026-09-09: 15 command-double scenarios; baseline exit 0; real backend remains blocked).
+- [x] Re-run the final committed script twice on real Docker/kind and replace the evidence blocker (2026-09-10, commit `0072e38`, script SHA `6a307daf`: two consecutive `reproduce.sh all --capture` runs pass — cluster create, context guard, ownership receipt, v0.4.6 CRD/controller install, `SandboxClaim` `Ready=True`, teardown to zero pods + namespace, scoped `down`. One-time per-cluster node CA-trust step for the corporate TLS-inspection root; `reproduce.sh` unmodified. See `docs/evidence/E8-T3/agent-sandbox-substrate/`).
+- [x] Run the isolated shell regression gate and repository baseline on the corrected script (2026-09-10: 15 command-double scenarios incl. the `kind` package-manager prerequisite; baseline exit 0).
 
-Verification status (2026-09-09 collaboration on PR #99):
+Verification status (2026-09-10):
 
-- Leo's earlier Darwin run predates the final script and ownership fixes; it is not current acceptance evidence.
-- This repair stays within the existing #50 ticket and the independent Reviewer's requested changes. Leo remains the Owner; Frank provides a reviewable fix.
-- Verify safety and failure behavior with isolated command doubles; real kind validation remains separately required.
-- Current repair machine has Git Bash and Go, but no Docker executable/daemon was found. Real lifecycle evidence is blocked here.
+- The 2026-09-09 collaboration on PR #99 landed via #114; Leo's earlier Darwin run at `adf4d76` predates the final script and is superseded.
+- Two real `reproduce.sh all --capture` runs pass against `0072e38` (see the Execution Todo line above and `docs/evidence/E8-T3/agent-sandbox-substrate/summary.md`).
+- The kind node needs the corporate TLS-inspection root CA trusted before it can pull `registry.k8s.io` / `docker.io`; done per-cluster with `update-ca-certificates` on the throwaway node. A run from a network without interception needs no such step.
 - Warm/cold comparison is deferred to #48 or a follow-up; no benchmark numbers are accepted by this task.
 
 ## Quality Gates
@@ -128,7 +127,8 @@ Verification status (2026-09-09 collaboration on PR #99):
 - Decision: the smoke fixtures use a bare `busybox:1.36` `sleep` pod with no `volumeClaimTemplates`, `runtimeClassName`, or `NetworkPolicy` — kind has no pre-provisioned RWO storage class and the ticket only needs one observable lifecycle, not a hardened template.
 - Decision: keep one `bash` script (no PowerShell port) for cross-platform use. macOS/Linux run it directly; Windows runs it under WSL2 (recommended — Docker Desktop's `kind` support uses the WSL2 backend) or Git Bash. The script normalises `mingw/msys/cygwin` to a `windows` OS and uses `.exe` for the local `kubectl` destination. Rationale: the heavy lifting (`kind`, `kubectl`, `docker`) is identical across platforms and only the ~250-line wrapper differs; a `bash` + WSL2/Git Bash story is standard for kind harnesses and far less code than maintaining a parallel `.ps1`. Revisit only if a contributor genuinely cannot use WSL2 or Git Bash.
 - Decision: the `kubectl` pinned fallback is `v1.34.0` (only used when `kubectl` is absent); `kind` has no pin here (install via package manager). The Owner machine has both via Homebrew so its recorded run shows `existing`.
-- Blocker (2026-09-09): no Docker executable/daemon was found on Frank's Windows repair machine. Leo or another Docker-equipped environment must run the final committed script twice and capture current evidence. Required endpoints remain github.com, dl.k8s.io, and registry.k8s.io.
+- Blocker (2026-09-09, **cleared 2026-09-10**): the repair machine had no Docker. Two real `reproduce.sh all --capture` runs now pass on Darwin arm64 / Docker Desktop against `0072e38`; evidence regenerated. Remaining gates are the independent re-review of #99 and the Owner/Reviewer task-packet approval on this issue.
+- Environment note (2026-09-10): on a network that TLS-inspects `registry.k8s.io` / `docker.io` (e.g. Zscaler), the disposable kind node needs the inspection root CA added to its trust store (`docker cp` the root into `/usr/local/share/ca-certificates/`, `update-ca-certificates`, restart containerd) before the controller image can pull. `reproduce.sh` is unmodified and fails non-zero without it. No such step is needed off the corporate network.
 
 - Review remediation: use a checkout-local cluster fingerprint (Docker container ID + kube-system UID), a namespace ownership label, and explicit context checks before mutation/deletion. Unowned existing labs must be inspected manually, never adopted.
 - Review remediation: diagnostics are read-only; mutating phases capture only with explicit `--capture` into unique gitignored directories. Record actual CRD served/storage versions, commit and script hash.
