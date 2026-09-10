@@ -15,6 +15,27 @@ import (
 
 var errTaskFileNotFound = errors.New("reference filesystem: task file not found")
 
+const referenceRuntimeFile = "/runtime/agent"
+
+// prepareTaskFile models backend preparation before the worker is allowed to
+// start. It lets the contract suite prove that an existing task file is not
+// readable or mutable while the allocation is only Bound.
+func (r *Runtime) prepareTaskFile(id v1alpha1.SandboxClaimBackendIdentity, target string, data []byte) error {
+	a, err := r.allocationFor(id)
+	if err != nil {
+		return err
+	}
+	if a.started || a.terminated || a.released {
+		return fmt.Errorf("prepare filesystem %s: allocation is not awaiting Start", a.claimID)
+	}
+	relative, err := taskRelativePath(a.filesystem.WorkingDirectory, target)
+	if err != nil {
+		return err
+	}
+	a.taskFiles[relative] = append([]byte(nil), data...)
+	return nil
+}
+
 // writeTaskFile is a reference-model probe used by the reusable filesystem
 // contract suite. It is deliberately not part of RuntimeBackend: production
 // agents use ordinary filesystem APIs inside the boundary established by the
@@ -48,8 +69,36 @@ func (r *Runtime) readTaskFile(id v1alpha1.SandboxClaimBackendIdentity, target s
 	return append([]byte(nil), data...), nil
 }
 
+// exportTaskFile is the reference model's test-only stand-in for an approved
+// external output operation. It deliberately shares the active-work guard:
+// output bytes can leave the task directory only before termination.
+func (r *Runtime) exportTaskFile(id v1alpha1.SandboxClaimBackendIdentity, target string) ([]byte, error) {
+	return r.readTaskFile(id, target)
+}
+
+func (r *Runtime) readRuntimeFile(id v1alpha1.SandboxClaimBackendIdentity, target string) ([]byte, error) {
+	if _, err := r.activeFilesystem(id); err != nil {
+		return nil, err
+	}
+	if path.Clean(target) != referenceRuntimeFile {
+		return nil, fmt.Errorf("%w: %s", runtime.ErrFilesystemBoundary, target)
+	}
+	return append([]byte(nil), r.filesystemRuntimeSentinel...), nil
+}
+
+func (r *Runtime) writeRuntimeFile(id v1alpha1.SandboxClaimBackendIdentity, target string, _ []byte) error {
+	if _, err := r.activeFilesystem(id); err != nil {
+		return err
+	}
+	return fmt.Errorf("%w: runtime file is read-only: %s", runtime.ErrFilesystemBoundary, target)
+}
+
 func (r *Runtime) outsideFilesystemSentinel() []byte {
 	return append([]byte(nil), r.filesystemOutsideSentinel...)
+}
+
+func (r *Runtime) runtimeFilesystemSentinel() []byte {
+	return append([]byte(nil), r.filesystemRuntimeSentinel...)
 }
 
 func (r *Runtime) activeFilesystem(id v1alpha1.SandboxClaimBackendIdentity) (*allocation, error) {

@@ -26,6 +26,9 @@ type Runtime struct {
 	// filesystemOutsideSentinel is synthetic reference-model data used to
 	// prove rejected writes have no outside effect. It is never host data.
 	filesystemOutsideSentinel []byte
+	// filesystemRuntimeSentinel models one readable runtime-supplied file
+	// outside the task directory. Mutation probes must leave it unchanged.
+	filesystemRuntimeSentinel []byte
 }
 
 func NewRuntime() *Runtime {
@@ -37,6 +40,7 @@ func NewRuntime() *Runtime {
 		byWorker:                  make(map[string]string),
 		readinessHold:             make(map[string]struct{}),
 		filesystemOutsideSentinel: []byte("reference-outside-sentinel"),
+		filesystemRuntimeSentinel: []byte("reference-runtime-file"),
 	}
 }
 

@@ -10,7 +10,6 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"runtime"
 	"strings"
 	"testing"
 )
@@ -37,6 +36,8 @@ func TestFilesystemLocalCompatibility(t *testing.T) {
 	writeFixtureFile(t, filepath.Join(workspace, "value_test.go"), []byte("package fsfixture\n\nimport \"testing\"\n\nfunc TestValue(t *testing.T) { if Value() != 2 { t.Fatalf(\"Value = %d\", Value()) } }\n"))
 
 	environment := fixtureEnvironment(workspace)
+	gitVersion := strings.TrimSpace(string(runFixtureCommand(t, workspace, environment, "git", "--version")))
+	goVersion := strings.TrimSpace(string(runFixtureCommand(t, workspace, environment, "go", "version")))
 	runFixtureCommand(t, workspace, environment, "git", "init", "--quiet")
 	runFixtureCommand(t, workspace, environment, "git", "-c", "user.name=Agenova Fixture", "-c", "user.email=fixture@invalid.example", "add", ".")
 	runFixtureCommand(t, workspace, environment, "git", "-c", "user.name=Agenova Fixture", "-c", "user.email=fixture@invalid.example", "commit", "--quiet", "-m", "fixture baseline")
@@ -49,7 +50,8 @@ func TestFilesystemLocalCompatibility(t *testing.T) {
 	runFixtureCommand(t, workspace, environment, "go", "test", "./...")
 
 	writeFixtureFile(t, filepath.Join(workspace, "result.patch"), diff)
-	exported, err := collectFixtureOutput(workspace, collector, "result.patch", fixtureExportLimit)
+	outputCollector := &fixtureCollector{workspace: workspace, destination: collector, limit: fixtureExportLimit, active: true}
+	exported, err := outputCollector.collect("result.patch")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -61,6 +63,14 @@ func TestFilesystemLocalCompatibility(t *testing.T) {
 	if got := mustReadFile(t, outside); string(got) != "outside-unchanged\n" {
 		t.Fatalf("outside sentinel changed: %q", got)
 	}
+	writeFixtureFile(t, filepath.Join(workspace, "unexported.txt"), []byte("must-not-export"))
+	outputCollector.close()
+	if _, err := outputCollector.collect("unexported.txt"); err == nil {
+		t.Fatal("collector accepted output after closure")
+	}
+	if _, err := os.Stat(filepath.Join(collector, "unexported.txt")); !os.IsNotExist(err) {
+		t.Fatalf("output attempted after collector closure reached destination: %v", err)
+	}
 
 	if err := os.RemoveAll(workspace); err != nil {
 		t.Fatal(err)
@@ -71,7 +81,23 @@ func TestFilesystemLocalCompatibility(t *testing.T) {
 	if got := mustReadFile(t, filepath.Join(collector, "result.patch")); !bytes.Equal(got, diff) {
 		t.Fatal("pre-termination export did not survive workspace cleanup")
 	}
-	t.Logf("FS-P1/FS-P2 cwd=%s git_diff_bytes=%d go_test=pass export_sha256=%x workspace_retained=false evidence=local-compatibility-not-isolation", workspace, len(diff), gotDigest)
+	t.Logf("FS-P1/FS-P2 git=%q go=%q cwd=%s git_diff_bytes=%d command_exits=0 export_sha256=%x workspace_retained=false evidence=local-compatibility-not-isolation", gitVersion, goVersion, workspace, len(diff), gotDigest)
+}
+
+type fixtureCollector struct {
+	workspace   string
+	destination string
+	limit       int64
+	active      bool
+}
+
+func (c *fixtureCollector) close() { c.active = false }
+
+func (c *fixtureCollector) collect(relative string) ([]byte, error) {
+	if !c.active {
+		return nil, fmt.Errorf("fixture output collector is closed")
+	}
+	return collectFixtureOutput(c.workspace, c.destination, relative, c.limit)
 }
 
 func collectFixtureOutput(workspace, collector, relative string, limit int64) ([]byte, error) {
@@ -86,6 +112,13 @@ func collectFixtureOutput(workspace, collector, relative string, limit int64) ([
 	}
 	if info.Mode()&os.ModeSymlink != 0 || !info.Mode().IsRegular() || info.Size() > limit {
 		return nil, fmt.Errorf("fixture output must be a bounded regular non-link file")
+	}
+	links, err := regularFileLinkCount(source, info)
+	if err != nil {
+		return nil, err
+	}
+	if links != 1 {
+		return nil, fmt.Errorf("fixture output must not be hard-linked")
 	}
 	if err := rejectFixtureAliases(workspace, cleaned); err != nil {
 		return nil, err
@@ -131,19 +164,29 @@ func fixtureEnvironment(workspace string) []string {
 	home := filepath.Join(workspace, ".home")
 	cache := filepath.Join(workspace, ".cache")
 	temp := filepath.Join(workspace, ".tmp")
-	environment := append([]string(nil), os.Environ()...)
-	environment = append(environment,
+	environment := make([]string, 0, 16)
+	for _, key := range []string{"PATH", "PATHEXT", "SYSTEMROOT", "SystemRoot", "COMSPEC", "ComSpec", "WINDIR", "windir"} {
+		if value, ok := os.LookupEnv(key); ok {
+			environment = append(environment, key+"="+value)
+		}
+	}
+	return append(environment,
 		"HOME="+home,
 		"USERPROFILE="+home,
 		"GIT_CONFIG_NOSYSTEM=1",
 		"GIT_CONFIG_GLOBAL="+os.DevNull,
+		"GIT_TERMINAL_PROMPT=0",
 		"GOCACHE="+filepath.Join(cache, "go-build"),
 		"GOMODCACHE="+filepath.Join(cache, "go-mod"),
+		"GOENV=off",
+		"GOPROXY=off",
+		"GOSUMDB=off",
+		"GOTOOLCHAIN=local",
+		"GOWORK=off",
 		"TMPDIR="+temp,
 		"TEMP="+temp,
 		"TMP="+temp,
 	)
-	return environment
 }
 
 func runFixtureCommand(t *testing.T, directory string, environment []string, name string, arguments ...string) []byte {
@@ -155,6 +198,7 @@ func runFixtureCommand(t *testing.T, directory string, environment []string, nam
 	if err != nil {
 		t.Fatalf("%s %s failed: %v\n%s", name, strings.Join(arguments, " "), err, output)
 	}
+	t.Logf("command cwd=%s argv=%q exit=0 output=%q", directory, append([]string{name}, arguments...), output)
 	return output
 }
 
@@ -186,17 +230,33 @@ func TestCollectFixtureOutputRejectsEscapeLinkAndOversize(t *testing.T) {
 	}
 	writeFixtureFile(t, filepath.Join(root, "outside.txt"), []byte("outside"))
 	writeFixtureFile(t, filepath.Join(workspace, "large.bin"), bytes.Repeat([]byte{'x'}, 9))
+	if err := os.Link(filepath.Join(root, "outside.txt"), filepath.Join(workspace, "hardlink.txt")); err != nil {
+		t.Fatalf("create hard-link fixture: %v", err)
+	}
 
 	assertCollectorRejects(t, "escape", func() error { _, err := collectFixtureOutput(workspace, collector, "../outside.txt", 8); return err })
 	assertCollectorRejects(t, "oversize", func() error { _, err := collectFixtureOutput(workspace, collector, "large.bin", 8); return err })
-	if runtime.GOOS != "windows" {
-		if err := os.Symlink(filepath.Join(root, "outside.txt"), filepath.Join(workspace, "link.txt")); err != nil {
-			t.Fatal(err)
-		}
-		assertCollectorRejects(t, "symlink", func() error { _, err := collectFixtureOutput(workspace, collector, "link.txt", 8); return err })
+	assertCollectorRejects(t, "hardlink", func() error { _, err := collectFixtureOutput(workspace, collector, "hardlink.txt", 8); return err })
+	if err := os.Symlink(filepath.Join(root, "outside.txt"), filepath.Join(workspace, "link.txt")); err != nil {
+		t.Fatalf("create symbolic-link fixture: %v", err)
 	}
+	assertCollectorRejects(t, "symlink", func() error { _, err := collectFixtureOutput(workspace, collector, "link.txt", 8); return err })
 	if entries, err := os.ReadDir(collector); err != nil || len(entries) != 0 {
 		t.Fatalf("rejected export wrote collector data: entries=%v error=%v", entries, err)
+	}
+}
+
+func TestFixtureEnvironmentExcludesCredentialVariables(t *testing.T) {
+	t.Setenv("GITHUB_TOKEN", "synthetic-must-not-propagate")
+	t.Setenv("AWS_SECRET_ACCESS_KEY", "synthetic-must-not-propagate")
+	t.Setenv("SSH_AUTH_SOCK", "synthetic-must-not-propagate")
+	t.Setenv("GIT_ASKPASS", "synthetic-must-not-propagate")
+	for _, entry := range fixtureEnvironment(t.TempDir()) {
+		key, _, _ := strings.Cut(entry, "=")
+		switch strings.ToUpper(key) {
+		case "GITHUB_TOKEN", "AWS_SECRET_ACCESS_KEY", "SSH_AUTH_SOCK", "GIT_ASKPASS":
+			t.Fatalf("credential-bearing variable propagated: %s", key)
+		}
 	}
 }
 

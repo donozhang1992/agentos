@@ -51,11 +51,19 @@ func TestRuntimeFilesystemContract(t *testing.T) {
 	contracttest.RunFilesystem(t, func(t *testing.T) contracttest.FilesystemFixture {
 		r := newConfiguredRuntime(t)
 		return contracttest.FilesystemFixture{
-			Backend:         r,
-			TemplateRef:     testTemplate,
-			WriteTaskFile:   r.writeTaskFile,
-			ReadTaskFile:    r.readTaskFile,
-			OutsideSentinel: r.outsideFilesystemSentinel,
+			Backend:          r,
+			TemplateRef:      testTemplate,
+			PrepareTaskFile:  r.prepareTaskFile,
+			WriteTaskFile:    r.writeTaskFile,
+			ReadTaskFile:     r.readTaskFile,
+			ExportTaskFile:   r.exportTaskFile,
+			ReadRuntimeFile:  r.readRuntimeFile,
+			WriteRuntimeFile: r.writeRuntimeFile,
+			OutsideSentinel:  r.outsideFilesystemSentinel,
+			RuntimeSentinel:  r.runtimeFilesystemSentinel,
+			FailNextTerminate: func(id v1alpha1.SandboxClaimBackendIdentity, err error) {
+				injectWorkerFailure(t, r, id, "terminate", err)
+			},
 		}
 	})
 }

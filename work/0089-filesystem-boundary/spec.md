@@ -49,20 +49,22 @@ Describe the working-directory support, outside rule, cleanup and output behavio
 
 ## Negative Cases
 
-All cases below are planned assertions, not executed tests.
+The reference suite executes the model-level cases. Ticket #51 must repeat the
+worker-observable cases on the real backend before reporting `BackendVerified`.
 
 | ID | Case | Required observation |
 | --- | --- | --- |
-| FS-N1 | Write/create/delete/rename outside W | Denied or unavailable; synthetic outside sentinel unchanged |
+| FS-N0 | Allocation is Bound/ready but `Start` has not succeeded | Worker cannot read or write W; prepared sentinel remains untouched until explicit Start |
+| FS-N1 | Write/create/delete/rename outside W, including a direct absolute path such as `/tmp/agenova-outside-sentinel` | Denied or unavailable; synthetic outside sentinel unchanged |
 | FS-N2 | `..`, absolute outside path, sibling prefix, symlink/junction escape or hard-link alias | No outside mutation or host/cross-claim read; model labels simulated alias resolution |
 | FS-N3 | Caller asks for host HOME, host credentials, host mounts or another claim's directory | Rejected before worker start; no successful configuration or inherited host credential helper |
 | FS-N4 | Claim B attempts to use claim A's directory; replacement follows A | No access to A's task files; replacement is fresh |
 | FS-N5 | Backend lacks the rule, root is unusable, or start fails | Explicit failure/gap; no fabricated conforming allocation or successful work |
 | FS-N6 | Output selection escapes W, names a link/special file, exceeds fixture limit or export fails | No outside read and no successful export receipt; no widened authority |
-| FS-N7 | Export after terminal outcome, forced timeout before export | Governed export denied; unexported output unavailable, existing export unaffected |
-| FS-N8 | Termination/cleanup fails, cleanup repeats, unknown allocation | Error separate from outcome; no reuse while unclean; never clean another claim |
+| FS-N7 | Successful termination before cleanup, terminal outcome, or forced timeout occurs before export | Governed export denied; an unexported sentinel never reaches the destination; existing acknowledged export remains unchanged |
+| FS-N8 | Termination remains incomplete when cleanup is requested; cleanup fails/repeats; unknown allocation | Cleanup cannot report release or permit reuse while worker/descendant termination is incomplete; errors remain separate from outcome; never clean another claim |
 
-Positive cases: FS-P1 prepares a fixture repo and records cwd, edits, local git diff, compilation and test exits; FS-P2 exports known output bytes and verifies receipt/digest; FS-P3 terminates and cleans up, retaining evidence and the exported result but no reusable task directory. FS-P4 reads an allowed runtime fixture outside W while denying its mutation. Use actual local commands for FS-P1 compatibility and model operations for boundary simulation; neither proves isolation.
+Positive cases: FS-P1 prepares a fixture repo and records cwd, command/tool versions, edits, local git diff, compilation and individual exits; FS-P2 exports known output bytes and verifies receipt/digest; FS-P3 terminates the worker and a background heartbeat descendant before cleanup, retaining evidence and the exported result but no reusable task directory; FS-P4 reads an allowed runtime fixture outside W while denying its mutation. The local compatibility fixture proves FS-P1/FS-P2 only, while model operations cover lifecycle ordering without claiming native isolation. FS-P3 is real-backend-only for v0 and remains mandatory in #51.
 
 ## Compatibility
 
@@ -73,6 +75,5 @@ Positive cases: FS-P1 prepares a fixture repo and records cwd, edits, local git 
 
 ## Open Decisions
 
-- Owner and independent Reviewer must accept the rule including read-only runtime files, synthetic HOME/cache placement and explicit failure for incompatible artifacts/backends.
-- Confirm pre-termination export with zero workspace retention and no guaranteed recovery of unexported outputs after crash/timeout. Confirm that a fixture collector suffices for #89 reference evidence, with live handoff evidence deferred to integration.
-- #30 is merged. The minimum neutral description attaches to Allocation and Observation without changing its five operations or adding a file-access API.
+- None for the reference contract. #30 is merged, and the neutral description attaches to Allocation and Observation without changing its five operations or adding a file-access API.
+- #48/#51 must still decide and prove the provider-specific layout. Unsupported semantics remain explicit gaps.
