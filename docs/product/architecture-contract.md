@@ -61,6 +61,7 @@ Pending / Bound / Running -> Expired when the relevant timeout applies
 - A request may narrow authority but cannot create authority.
 - Requests contain scopes and references, never external secret values.
 - Authority is anchored to an active claim, not an idle sandbox or network location.
+- A governed invocation must carry system-established context bound to its worker claim; a caller-supplied claim ID alone is never proof of that binding. A target claim that differs from the bound claim is denied.
 - Warm workers must not hold standing external authority.
 - External system credentials remain behind Tool and Model Gateways or the future Memory Interface.
 - A sandbox may receive only scoped identity material required to authenticate to Agenova components.

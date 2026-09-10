@@ -1,6 +1,6 @@
 # Implementation Evidence Snapshot
 
-Updated: 2026-09-08
+Updated: 2026-09-10
 
 This file is the evidence-backed snapshot of what the merged repository currently proves. Product vision is not implementation status, and this file does not track ticket owners, readiness, sequence, or work-in-progress; those remain in GitHub Issues and the Delivery Project.
 
@@ -12,15 +12,15 @@ Update this snapshot only when merged behavior, accepted evidence, or a known im
 | --- | --- | --- |
 | Reusable agent role | Implemented in v0 contract | The backend-neutral `AgentTemplate` schema and validation are merged; runtime registration remains future work. |
 | Submit a declarative task request | Partial | The `ClaimRequest` YAML/API contract and validation are merged; CLI submission is not implemented. |
-| Authorize the requesting principal | Not implemented | There is no trusted `Principal` contract, reference `PolicyBundle`, action authorizer, or authorization-decision evidence. |
-| Resolve requested access | Not implemented | Current gateway tests cover lifecycle and experimental parent scope only; there is no merged template/policy/request intersection or persisted effective-authority snapshot. |
+| Authorize the requesting principal | Implemented in reference contracts | Trusted-local `Principal`, versioned `PolicyBundle`, and deterministic action authorization are merged; external identity-provider integration is not implemented. |
+| Resolve requested access | Implemented in reference contracts | Template, request, and policy limits resolve to an effective-authority snapshot with deterministic tests; the request-to-claim run service and gateway wiring remain open. |
 | Create one claim per run | Implemented in v0 contract and reference | The system-managed `SandboxClaim`/issued-state contract, `internal/operator`, and lifecycle tests are merged; request-to-claim issuance remains open. |
-| Bind a runtime backend | Implemented in reference; spike on Kubernetes | In-memory backend passes the shared contract. Agent Sandbox allocation and readiness were exercised on kind. |
+| Bind a runtime backend | Implemented in reference; partial on Kubernetes | The reduced five-operation reference backend and reusable contract suite are merged. Agent Sandbox still reports unsupported operations and an unverified filesystem boundary explicitly. |
 | Enforce effective authority | Partial reference | Tool and Model Gateways require a `Running` claim and retain experimental parent-scope checks, but do not yet enforce resolved tool, model, or resource authority. |
 | Execute through gateways | Partial | Authorization methods exist; there is no network gateway or real upstream proxy path. |
 | Record claim-scoped facts | Reference only | In-memory Tool, Model, and Runtime fact store; no durable storage or denial facts. |
 | End authority with the claim | Implemented in reference | Terminal negative tests pass; experimental child-out-of-scope tests also remain. |
-| Query complete evidence | Not implemented as a product surface | Tests can inspect facts; CLI/API/UI query output does not exist. |
+| Query complete evidence | Fixture UI foundation only | React renders canonical v0 fixtures through a typed evidence source; no live API or complete evidence query path. See [fixture storyboard](../ui/README.md). |
 | Use replaceable backends | Contract exists | Only the in-memory backend fully satisfies the contract; Agent Sandbox remains a spike with known gaps. |
 
 ## Implemented and Tested
@@ -29,6 +29,8 @@ Update this snapshot only when merged behavior, accepted evidence, or a known im
 - Sandbox replacement evidence kept separate from terminal claim outcome.
 - In-memory `RuntimeBackend` reference implementation.
 - Reusable backend contract test suite.
+- Trusted-local principal boundary, reference policy bundle, action authorization, and effective-authority resolution.
+- Claim-scoped filesystem semantics in the reference backend, with simulated boundary cases and a separate local Git/Go compatibility fixture.
 - Tool and Model Gateway allow/deny behavior based on active claim state.
 - Experimental parent/child lineage and child-out-of-scope denial, retained outside the committed MVP.
 - In-memory `RuntimeEvent`, `ToolInvocation`, and `ModelInvocation` storage and claim queries.
@@ -45,8 +47,8 @@ It is not production-ready. Terminal outcomes are held in adapter memory, pool s
 ## Scaffolds or Missing Product Surfaces
 
 - No usable `agenova run` command. The composition root exists; it does not submit ClaimRequest YAML.
-- No `ClaimRequest` API type, YAML validator, or request-to-claim resolver.
-- No trusted-principal, static-policy, control-plane action-authorization, or decision-evidence path.
+- No request-to-claim run service; the `ClaimRequest` type and validation are merged but are not yet wired to issuance.
+- No external identity-provider adapter; the trusted-local principal source is reference-only.
 - No running operator or controller.
 - No HTTP/gRPC Tool or Model Gateway.
 - No real tool/model provider proxy.
@@ -56,14 +58,14 @@ It is not production-ready. Terminal outcomes are held in adapter memory, pool s
 - No Memory Interface implementation.
 - No OpenTelemetry integration.
 - No CRD generation, Helm chart, release image, or install flow.
-- No read-only evidence API or React claim console.
+- No read-only evidence API or live React claim console. A fixture-backed React storyboard renders request intent, Allow/Running, pre-claim Deny and missing/unknown source diagnostics; contract, component and browser checks run in the shared baseline.
 
 ## Next Delivery Slice
 
 The next slice should make the reference governance path usable before adding more platforms:
 
-1. Define the smallest backend-neutral principal, reference-policy, authorization-decision, `ClaimRequest`, effective-authority, fact, and evidence-output schemas.
-2. Authorize the trusted principal's action/project/template, then resolve requested access against template and policy limits before creating a system-managed claim.
+1. Wire the merged principal, policy, action-authorization, `ClaimRequest`, and effective-authority contracts into one request-to-claim run service.
+2. Persist the authorization decision and resolved authority before creating a system-managed claim.
 3. Add `agenova run -f <claim-request.yaml>` as a client of that same schema for one example role.
 4. Drive claim lifecycle, one allowed tool call, one allowed model call, and one denied request through the reference path.
 5. Return a single claim evidence view containing lifecycle, effective authority, invocations, outcome, and backend identity.
@@ -74,9 +76,8 @@ The next slice should make the reference governance path usable before adding mo
 
 ## Immediate Contributor Opportunities
 
-- `ClaimRequest` schema, fixtures, and validation tests.
-- Trusted-principal, reference-policy, and Team A allow / Team B deny fixtures.
-- Request-to-effective-authority resolver and negative tests.
+- Request-to-claim run service using the merged contracts and Team A allow / Team B deny fixtures.
+- Trusted invocation-context binding and gateway mismatch denial tests.
 - CLI `-f` golden path and smoke test.
 - Denial facts and evidence query shape.
 - Agent Sandbox restart/durability spike.

@@ -42,6 +42,7 @@ metadata:
   name: fix-payment-timeout
 spec:
   templateRef: engineer
+  projectRef: payments
   task:
     type: repository-change
     input:
@@ -94,7 +95,8 @@ The trusted principal comes from an upstream authentication boundary and is not 
 ### 4. Claim-scoped authority
 
 - Only an active `Running` claim can use governed Tool or Model interfaces.
-- Unknown, pending, terminal, and context-mismatched claims are denied.
+- The run service supplies a trusted invocation context bound to the active claim. In the reference path this may be an in-process value; it is not a caller-controlled claim ID and does not claim a production workload-identity implementation.
+- Unknown, pending, terminal, and context-mismatched claims are denied. A request is context-mismatched when its claimed target ID differs from the claim ID bound to that trusted invocation context.
 - Long-lived external credentials are not placed in sandbox configuration.
 
 ### 5. Facts and accountability
@@ -162,8 +164,9 @@ The MVP is accepted when a teammate can reproduce this behavior:
 6. Execute one allowed tool call and one allowed model call.
 7. Attempt at least one denied governed request and observe evidence without an external call.
 8. End the worker claim and prove further governed access is denied.
-9. Query the same evidence representation through CLI JSON and the live read-only console.
-10. Run the reference path locally and demonstrate the supported runtime portion on the selected real backend.
+9. Run a second independent allowed claim and verify that each claim's decisions and invocation facts remain attributable only to that claim.
+10. Query the same evidence representation through CLI JSON and the live read-only console.
+11. Run the reference path locally and demonstrate the supported runtime portion on the selected real backend.
 
 ## Success Measures
 
@@ -175,7 +178,7 @@ The MVP is accepted when a teammate can reproduce this behavior:
 ## Open Product Decisions
 
 - Final product name for the public claim resource: keep `SandboxClaim` or evolve toward `RuntimeClaim`.
-- Exact minimal principal, reference-policy, authorization-decision, `ClaimRequest`, effective-authority, fact, and evidence schemas for the executable slice.
+- Exact evidence-view and trusted invocation-context shapes for the executable slice.
 - Whether the first demo gateway uses HTTP, gRPC, or an in-process boundary behind a stable interface.
 - Which real backend behaviors are committed for the final demo versus recorded as gaps.
 - Exact minimum components and packaging used by the reference installation path.

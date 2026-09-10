@@ -50,7 +50,7 @@ Out of scope:
 ## Execution Todo
 
 - [x] Scout the relevant implementation, tests, risks, and dependencies.
-- [ ] Confirm this packet with the Owner and independent Reviewer before merge.
+- [x] Confirm this packet with the Owner and resolve the independent automated review findings before merge.
 - [x] Update the product authorities and public/status routing.
 - [x] Update the affected GitHub issue scopes, dependencies, and delivery metadata.
 - [x] Run the multi-agent residue scan and dependency/vertical-slice closure review.
@@ -60,7 +60,7 @@ Out of scope:
 ## Quality Gates
 
 - `.\scripts\check.ps1 -Docs`
-- `rg -n -i "parent|child|lineage|multi-agent|multi agent|engineer/reviewer|orchestrator" AGENTS.md README.md docs work/0109-single-claim-mvp-scope`
+- `rg -n -i "parent|child|lineage|multi-agent|multi agent|engineer/reviewer|orchestrator" AGENTS.md README.md docs harness work/0109-single-claim-mvp-scope`
 - `.\scripts\check.ps1 -All`
 
 ## Evidence Required
@@ -79,4 +79,5 @@ Out of scope:
 - Calibration pass 1 (scope residue): all remaining parent/child, lineage, or multi-agent references in current documentation are explicitly future, experimental, or out of scope. The scan also found and corrected one stale statement that treated the merged `AgentTemplate` and `ClaimRequest` contracts as unimplemented. A broader follow-up scan using independent `parent` and `child` terms caught residual parent/child acceptance clauses in #32 and #35; both were removed before the pass was repeated.
 - Calibration pass 2 (dependency closure): E5 now contains only #37/#38, E9 contains only #53/#55, retained MVP tickets do not depend on #39/#54, and the #107 single-claim critical path remains complete. #39/#54 are P2 Backlog items with no milestone or Epic/Wave/Sequence assignment.
 - `./scripts/check.ps1 -Docs` and `./scripts/check.ps1 -All` passed on 2026-09-08.
-- Independent review is still required before merge.
+- After reconciling with current `main`, the expanded residue scan, `./scripts/check.ps1 -Docs`, and `./scripts/check.ps1 -All` passed again on 2026-09-10.
+- The automated independent review found four gaps: harness routing, stale implementation status, undefined trusted invocation context, and missing cross-claim attribution evidence. All four are corrected in the final diff. Under the Owner's one-day review fallback, a clean final review and green CI permit merge without waiting for another approval.
