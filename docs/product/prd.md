@@ -162,11 +162,12 @@ The MVP is accepted when a teammate can reproduce this behavior:
 4. Show that requested access outside the applicable limits is absent from effective authority.
 5. Observe backend allocation and claim transition to `Running`.
 6. Execute one allowed tool call and one allowed model call.
-7. Attempt at least one denied governed request and observe evidence without an external call.
-8. End the worker claim and prove further governed access is denied.
-9. Run a second independent allowed claim and verify that each claim's decisions and invocation facts remain attributable only to that claim.
-10. Query the same evidence representation through CLI JSON and the live read-only console.
-11. Run the reference path locally and demonstrate the supported runtime portion on the selected real backend.
+7. Run a second independent allowed claim through `Running` and one governed invocation.
+8. From one running worker context, submit a governed request that nominates the other running claim's ID; observe context-mismatch denial evidence and prove that no external call or invocation fact is produced.
+9. Verify that each claim's decisions, runtime events, and tool/model invocation facts remain attributable only to that claim.
+10. End both worker claims and prove further governed access is denied.
+11. Query the same evidence representation through CLI JSON and the live read-only console.
+12. Run the reference path locally and demonstrate the supported runtime portion on the selected real backend.
 
 ## Success Measures
 
