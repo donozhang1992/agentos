@@ -21,6 +21,7 @@ Additional task-specific context:
 - [Quality gates](../../docs/harness/quality-gates.md#agent-sandbox-integration)
 - [Kubernetes Agent Sandbox Adapter note](../../docs/backends/agent-sandbox.md) — existing spike scope and known gaps
 - [Evidence convention](../../docs/evidence/README.md)
+- [PR #99 repair handoff](pr99-handoff.md) — remaining Owner steps and current verification limits
 - Upstream: `kubernetes-sigs/agent-sandbox` pinned release manifests and CRDs
 - Prior exploratory work on `origin/neo/e8-t3-agent-sandbox-substrate` (commit `2e3dab7`) assumed `kind`/`kubectl` were pre-installed; this packet supersedes it and adds `kind` installation to scope.
 
@@ -77,30 +78,23 @@ Out of scope:
 - [x] Implement cluster up + pinned Agent Sandbox install + readiness wait + version/readiness recording.
 - [x] Implement the create / observe / terminate / cleanup smoke path with explicit failure reporting.
 - [x] Split the lifecycle into `smoke` (create + observe Ready, fixtures left in place for inspection) and `teardown` (delete claim/pool/template, assert pods -> 0, drop the namespace); `all` runs `up -> smoke -> teardown -> down`.
-- [x] Add a `compare` phase: for each image in a size ladder, measure `SandboxClaim -> Ready` for a cold-start claim (no warm pool) vs a warm-pool claim, and print a table. Run on its own, not part of `all`.
+- [x] Remove the compare command/report from #50 per the independent review; retain the prior implementation in Git history for a follow-up.
 - [x] Add the minimal manifests and the runbook; add the pointer line in `docs/backends/agent-sandbox.md`.
-- [x] Run the script end to end (three consecutive `reproduce.sh all` passes) on a real local machine; capture `summary.md` + `output.txt`.
-- [ ] Run `./scripts/check.ps1 -Docs` and review the diff for scope and source-of-truth updates. (`pwsh` is not installed on the Owner machine; run in CI or by the Reviewer. Manual Markdown-link check done.)
+- [ ] Re-run the corrected final committed script twice on real Docker/kind and replace the explicit evidence blocker.
+- [x] Run the isolated shell regression gate and repository baseline on the corrected script (2026-09-09: 15 command-double scenarios; baseline exit 0; real backend remains blocked).
 
-Verification (Darwin arm64, 2026-08-31):
+Verification status (2026-09-09 collaboration on PR #99):
 
-- Without Docker: `tools`/`status` reuse the existing Homebrew `kind v0.32.0` / `kubectl v1.36.2` and skip install; `up` with the daemon down exits 1 with `docker daemon is not reachable` and creates nothing; an unknown subcommand prints usage and exits 1. `bash -n` clean; `shellcheck` not installed locally.
-- With Docker (29.6.1): `reproduce.sh all` passed end to end against Agent Sandbox `v0.4.6` (`registry.k8s.io/agent-sandbox/agent-sandbox-controller:v0.4.6`) on kind cluster `agenova-k8s-lab` — cluster created and context verified, `manifest.yaml` + `extensions.yaml` applied and controller Ready, `SandboxClaim/smoke-claim` reached `Ready=True` with a `Running` sandbox pod, then claim/pool/template torn down (pods -> 0), namespace and cluster deleted. The active context `ais-uat` was restored after each run.
-- Finding for #48 (warm-pool recycle): on `v0.4.6`, deleting a warm-pool-backed `SandboxClaim` terminates the *claimed* pod, but the `SandboxWarmPool` immediately provisions a replacement to hold `spec.replicas`, so the namespace pod count settles back to `replicas`, not zero. Only deleting the claim **and** the pool **and** the template drives it to zero. The `teardown` phase deletes all three and asserts pod count zero; a cold-start claim (no pool) instead deletes its `Sandbox` and pod outright.
-- Finding for #48 (warm pool vs cold start): a `SandboxClaim` may omit `warmpool` and reference only `sandboxTemplateRef` — the controller then provisions a fresh `Sandbox` + pod on demand, so `claim -> Ready` includes the image pull + pod create + start. `reproduce.sh compare` measured `claim -> Ready` wall time per image (node cache evicted before each cold run):
-
-  | image | size (approx) | cold, no pool | warm, `replicas:1` pool |
-  | --- | --- | --- | --- |
-  | `busybox:1.36` | ~4 MB | 6 s | 0 s |
-  | `python:3.12-slim` | ~130 MB | 10 s | 0 s |
-  | `node:22-slim` | ~250 MB | 13 s | 0 s |
-
-  Cold `claim -> Ready` rises with image size (pull-dominated); the warm-pool path is ~0 s for every image because the pull already happened while the pool pre-warmed. On kind with a fast registry the absolute cold numbers are small; the gap widens on slower networks / larger images. Recorded as a prose note for #48, no contract change.
+- Leo's earlier Darwin run predates the final script and ownership fixes; it is not current acceptance evidence.
+- This repair stays within the existing #50 ticket and the independent Reviewer's requested changes. Leo remains the Owner; Frank provides a reviewable fix.
+- Verify safety and failure behavior with isolated command doubles; real kind validation remains separately required.
+- Current repair machine has Git Bash and Go, but no Docker executable/daemon was found. Real lifecycle evidence is blocked here.
+- Warm/cold comparison is deferred to #48 or a follow-up; no benchmark numbers are accepted by this task.
 
 ## Quality Gates
 
 - `./harness/spike/agent-sandbox-substrate/reproduce.sh all` — real end-to-end run (twice, for determinism), evidence captured
-- `./harness/spike/agent-sandbox-substrate/reproduce.sh compare` — warm-pool vs cold-start image-size comparison, run on its own; results recorded as the #48 prose note above
+- `bash harness/spike/agent-sandbox-substrate/test-reproduce.sh` — isolated command-double regression gate; not real-backend evidence
 - `./scripts/check.ps1 -Docs` — Markdown links and docs structure for the new runbook/pointer
 - `shellcheck harness/spike/agent-sandbox-substrate/reproduce.sh` — if available in the environment
 
@@ -127,10 +121,14 @@ Verification (Darwin arm64, 2026-08-31):
 - Decision (Owner-confirmed 2026-08-31): the script prefers an existing `kind`/`kubectl` on `PATH` and skips installing them; when a tool is absent it fetches a pinned, checksum-verified official release binary into `.tmp/`. It only *checks* for the Docker daemon and `curl`, failing loudly when they are missing — installing a container engine is out of scope.
 - Decision: reuse the kube context name `kind-agenova-k8s-lab` that `./scripts/check.ps1 -Integration -KubeContext kind-agenova-k8s-lab` already expects, so #51 can reuse this substrate.
 - Decision (Owner-confirmed 2026-08-31): pin upstream Agent Sandbox **`v0.4.6`** (`extensions.agents.x-k8s.io/v1alpha1`), matching the rest of the codebase — the `internal/runtime/agentsandbox` adapter, `docs/backends/agent-sandbox.md`, `THIRD_PARTY_NOTICES.md`, and the `scripts/checks/repository.ps1` check are all on `v0.4.6`. This keeps the substrate consistent with the shipped adapter. Assets for `v0.4.6` are `manifest.yaml` (core) + `extensions.yaml`. Adopting a newer upstream release across the whole E8 surface is deferred and tracked by the #66 mapping spike.
-- Decision (Owner-confirmed 2026-08-31): install `kind` via its pinned official release binary, not `go install` or a package manager. Pin an exact `kind` version in the script; download the release binary for the host OS/arch, verify the published SHA256, cache it under the gitignored `.tmp/`, and reuse a `PATH` `kind` only when its version already matches the pin. This keeps reruns deterministic and never mutates the developer's system `PATH` or existing `kind`.
+- Decision (Owner-confirmed 2026-08-31): install `kind` via its pinned official release binary, not `go install` or a package manager. Pin an exact `kind` version in the script; download the release binary for the host OS/arch, verify the published SHA256, cache it under the gitignored `.tmp/`, and reuse a `PATH` `kind` at its existing version and record it. This keeps reruns deterministic and never mutates the developer's system `PATH` or existing `kind`.
 - Owner authorization: the Owner explicitly approved this packet and requested execution and a local test on 2026-08-31, and will review the resulting PR. Independent Reviewer approval on Ticket #50 remains a PR gate.
-- Owner machine baseline (2026-08-31, Darwin arm64): `kind v0.32.0` and `kubectl v1.36.2` are already installed via Homebrew, so the pinned-binary install path will not be exercised there (the skip path will). The Docker daemon is currently **not running** and the active context is `ais-uat`; Docker Desktop must be started before the `up`/`smoke` phases, and the context-mismatch refusal can be verified as-is.
+- Owner machine baseline (2026-08-31, Darwin arm64): `kind v0.32.0` and `kubectl v1.36.2` are already installed via Homebrew, so the pinned-binary install path will not be exercised there (the skip path will). The recorded early prerequisite failure was later followed by a successful legacy run; it is historical, not the current blocker.
 - Decision: the smoke fixtures use a bare `busybox:1.36` `sleep` pod with no `volumeClaimTemplates`, `runtimeClassName`, or `NetworkPolicy` — kind has no pre-provisioned RWO storage class and the ticket only needs one observable lifecycle, not a hardened template.
-- Decision: keep one `bash` script (no PowerShell port) for cross-platform use. macOS/Linux run it directly; Windows runs it under WSL2 (recommended — Docker Desktop's `kind` support uses the WSL2 backend) or Git Bash. The script normalises `mingw/msys/cygwin` to a `windows` OS and adds `.exe` for the pinned `kind`/`kubectl` fallback download. Rationale: the heavy lifting (`kind`, `kubectl`, `docker`) is identical across platforms and only the ~250-line wrapper differs; a `bash` + WSL2/Git Bash story is standard for kind harnesses and far less code than maintaining a parallel `.ps1`. Revisit only if a contributor genuinely cannot use WSL2 or Git Bash.
+- Decision: keep one `bash` script (no PowerShell port) for cross-platform use. macOS/Linux run it directly; Windows runs it under WSL2 (recommended — Docker Desktop's `kind` support uses the WSL2 backend) or Git Bash. The script normalises `mingw/msys/cygwin` to a `windows` OS and uses `.exe` for local destinations; the upstream kind Windows asset has no `.exe` suffix, while kubectl's does. Rationale: the heavy lifting (`kind`, `kubectl`, `docker`) is identical across platforms and only the ~250-line wrapper differs; a `bash` + WSL2/Git Bash story is standard for kind harnesses and far less code than maintaining a parallel `.ps1`. Revisit only if a contributor genuinely cannot use WSL2 or Git Bash.
 - Decision: `kind`/`kubectl` pinned fallbacks are `v0.33.0` / `v1.34.0` (only used when the tool is absent); the Owner machine already has both via Homebrew so its recorded run will show `existing`.
-- Blockers: Docker daemon not running on the Owner machine — blocks the end-to-end `up`/`smoke` run until Docker Desktop is started. No code blocker. Execution also needs network access to `github.com`, `dl.k8s.io`, and `registry.k8s.io`.
+- Blocker (2026-09-09): no Docker executable/daemon was found on Frank's Windows repair machine. Leo or another Docker-equipped environment must run the final committed script twice and capture current evidence. Required endpoints remain github.com, dl.k8s.io, and registry.k8s.io.
+
+- Review remediation: use a checkout-local cluster fingerprint (Docker container ID + kube-system UID), a namespace ownership label, and explicit context checks before mutation/deletion. Unowned existing labs must be inspected manually, never adopted.
+- Review remediation: diagnostics are read-only; mutating phases capture only with explicit `--capture` into unique gitignored directories. Record actual CRD served/storage versions, commit and script hash.
+- Review remediation: cleanup lookup failures and timeouts fail non-zero; compare/report are removed from #50. The existing upstream version remains v0.4.6.
