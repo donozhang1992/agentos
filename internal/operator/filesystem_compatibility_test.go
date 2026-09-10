@@ -32,7 +32,7 @@ func TestFilesystemLocalCompatibility(t *testing.T) {
 		}
 	}
 	writeFixtureFile(t, outside, []byte("outside-unchanged\n"))
-	writeFixtureFile(t, filepath.Join(workspace, "go.mod"), []byte("module example.local/fsfixture\n\ngo 1.24\n"))
+	writeFixtureFile(t, filepath.Join(workspace, "go.mod"), []byte("module example.local/fsfixture\n\ngo 1.22\n"))
 	writeFixtureFile(t, filepath.Join(workspace, "value.go"), []byte("package fsfixture\n\nfunc Value() int { return 1 }\n"))
 	writeFixtureFile(t, filepath.Join(workspace, "value_test.go"), []byte("package fsfixture\n\nimport \"testing\"\n\nfunc TestValue(t *testing.T) { if Value() != 2 { t.Fatalf(\"Value = %d\", Value()) } }\n"))
 
