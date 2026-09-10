@@ -14,13 +14,18 @@ set -euo pipefail
 # "Pinned versions" table documents them and when to bump each one.
 #
 #   AGENT_SANDBOX_VERSION    installed on every run (the thing this spike proves).
-#   KIND_FALLBACK_VERSION    used ONLY when `kind` is not already on PATH. An
-#                            existing `kind` is used as-is at whatever version it is.
 #   KUBECTL_FALLBACK_VERSION used ONLY when `kubectl` is not already on PATH.
 #
+# `kind` is NOT installed by this script. It must already be on PATH, installed
+# with a supported package manager per the upstream quick-start
+# (https://kind.sigs.k8s.io/docs/user/quick-start/#installing-with-a-package-manager):
+# macOS `brew install kind` or `sudo port install kind`; Windows `choco install kind`.
+# An existing `kind` is used as-is at whatever version it is; a missing `kind`
+# is a loud prerequisite failure, never a download. Owner decision 2026-09-10.
+#
 # Bump AGENT_SANDBOX_VERSION when the team adopts a newer upstream release.
-# Bump the *_FALLBACK_VERSION pins when a clean machine should bootstrap a
-# newer kind/kubectl; verified working values as of 2026-08-31 below.
+# Bump KUBECTL_FALLBACK_VERSION when a clean machine should bootstrap a newer
+# kubectl; verified working value as of 2026-08-31 below.
 #
 # NOTE: this substrate is deliberately pinned to v0.4.6 to match the rest of
 # the codebase (the internal/runtime/agentsandbox adapter, docs/backends,
@@ -30,8 +35,8 @@ set -euo pipefail
 CLUSTER_NAME="agenova-k8s-lab"
 CONTEXT="kind-${CLUSTER_NAME}"
 AGENT_SANDBOX_VERSION="v0.4.6"      # matches the codebase adapter (v1alpha1 APIs)
-KIND_FALLBACK_VERSION="v0.33.0"     # kind latest as of 2026-08-31
-KUBECTL_FALLBACK_VERSION="v1.34.0"  # fallback client; server version is recorded separately
+KUBECTL_FALLBACK_VERSION="v1.34.0"  # fallback client only; server version is recorded separately
+KIND_INSTALL_DOC="https://kind.sigs.k8s.io/docs/user/quick-start/#installing-with-a-package-manager"
 
 CONTROLLER_NAMESPACE="agent-sandbox-system"
 CONTROLLER_DEPLOY="agent-sandbox-controller"
@@ -105,7 +110,7 @@ host_os() {
     linux*) printf 'linux' ;;
     darwin*) printf 'darwin' ;;
     mingw*|msys*|cygwin*|windows*) printf 'windows' ;;
-    *) fail "unsupported OS $(uname -s) for tool auto-install (install kind/kubectl manually)" ;;
+    *) fail "unsupported OS $(uname -s) for kubectl auto-install (install kubectl manually)" ;;
   esac
 }
 host_arch() {
@@ -119,7 +124,8 @@ exe_suffix() { [ "$(host_os)" = "windows" ] && printf '.exe' || true; }
 
 # download_pinned_tool <name> <pinned-version>
 # Downloads a checksum-verified pinned binary into .tmp/ and prints its path.
-# Only called when <name> is not already on PATH.
+# Only called for `kubectl` when it is not already on PATH. `kind` is never
+# downloaded (install it with a package manager, see KIND_INSTALL_DOC).
 download_pinned_tool() {
   local name="$1" version="$2"
   local os arch ext dest url sha_url expected got
@@ -135,10 +141,6 @@ download_pinned_tool() {
   fi
 
   case "${name}" in
-    kind)
-      url="https://github.com/kubernetes-sigs/kind/releases/download/${version}/kind-${os}-${arch}"
-      sha_url="${url}.sha256sum"
-      ;;
     kubectl)
       url="https://dl.k8s.io/release/${version}/bin/${os}/${arch}/kubectl${ext}"
       sha_url="${url}.sha256"
@@ -169,15 +171,13 @@ cached_tool() {
   printf '%s\n' "${path}"
 }
 
+require_kind() {
+  command -v kind >/dev/null 2>&1 || fail "kind not found on PATH. This harness does not install kind; add it with a supported package manager (${KIND_INSTALL_DOC}): macOS 'brew install kind' or 'sudo port install kind'; Windows 'choco install kind'."
+  KIND_BIN="$(command -v kind)"; KIND_SOURCE="existing"
+}
+
 resolve_tools() {
-  if command -v kind >/dev/null 2>&1; then
-    KIND_BIN="$(command -v kind)"; KIND_SOURCE="existing"
-  elif [ "${ALLOW_DOWNLOADS}" = false ]; then
-    KIND_BIN="$(cached_tool kind "${KIND_FALLBACK_VERSION}")"; KIND_SOURCE="cached:${KIND_FALLBACK_VERSION}"
-  else
-    require_cmd curl
-    KIND_BIN="$(download_pinned_tool kind "${KIND_FALLBACK_VERSION}")"; KIND_SOURCE="pinned:${KIND_FALLBACK_VERSION}"
-  fi
+  require_kind
   if command -v kubectl >/dev/null 2>&1; then
     KUBECTL_BIN="$(command -v kubectl)"; KUBECTL_SOURCE="existing"
   elif [ "${ALLOW_DOWNLOADS}" = false ]; then

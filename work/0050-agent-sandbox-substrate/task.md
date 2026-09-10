@@ -31,8 +31,8 @@ In scope:
 
 - One executable script under `harness/spike/agent-sandbox-substrate/` that:
   - resolves and verifies the kube context before any mutation or cleanup;
-  - resolves `kind` and `kubectl`: **if already on `PATH`, use them as-is and record their versions (skip install)**; only when a tool is absent, download the pinned official release binary for the host OS/arch, verify its published SHA256, cache it under the gitignored `.tmp/`, and use that copy for the run;
-  - checks for the Docker daemon and `curl` and fails loudly with a specific message if either is missing (it does not install a container engine);
+  - resolves `kind` and `kubectl`: **if already on `PATH`, use them as-is and record their versions (skip install)**; `kind` is never downloaded — a missing `kind` fails loudly with the supported package-manager commands (Owner decision 2026-09-10); only when `kubectl` is absent, download the pinned official release binary for the host OS/arch, verify its published SHA256, cache it under the gitignored `.tmp/`, and use that copy for the run;
+  - checks for the Docker daemon and `curl` and fails loudly with a specific message if either is missing (it does not install a container engine or `kind`);
   - creates a disposable, uniquely named local cluster (or reuses an existing one it created);
   - installs one documented, pinned upstream Agent Sandbox version and its prerequisites, waiting for controller readiness;
   - records the resolved `kind`, Kubernetes, CRD, controller, and Agent Sandbox versions and readiness;
@@ -52,12 +52,12 @@ Out of scope:
 - A claim-governance proof or any use of an Agenova `ClaimRequest`/`SandboxClaim`.
 - Changing the PRD, architecture contract, or shared checks beyond what a new script/doc requires.
 - Managing the Docker daemon; the script only checks for it and fails loudly if it is not running.
-- Replacing a `kind`/`kubectl` that is already installed — an existing one on `PATH` is used as-is; a pinned binary is fetched only when the tool is absent.
+- Replacing a `kind`/`kubectl` that is already installed — an existing one on `PATH` is used as-is. `kind` is never fetched by the script (install it with a package manager); a pinned `kubectl` binary is fetched only when `kubectl` is absent.
 - Making this substrate part of the default `./scripts/check.ps1 -All` gate.
 
 ## Acceptance Criteria
 
-- On a machine that already has `kind` and `kubectl`, the script skips installing them and records the existing versions; on a machine without one of them, it fetches the pinned binary into `.tmp/`, verifies its checksum, and reports the resolved path and version.
+- On a machine that already has `kind` and `kubectl`, the script skips installing them and records the existing versions; without `kind` it exits non-zero naming the supported package managers (`brew`/`port`/`choco`) and the upstream quick-start URL; without `kubectl` it fetches the pinned binary into `.tmp/`, verifies its checksum, and reports the resolved path and version.
 - The script verifies the resolved kube context matches the cluster it manages before any mutation or cleanup, and aborts every mutating subcommand (including teardown) on a mismatch.
 - It installs the documented pinned upstream Agent Sandbox version and prerequisites, then records `kind`, Kubernetes, CRD, controller image, and Agent Sandbox version plus controller readiness.
 - One minimal upstream-native sandbox is created, observed reaching Ready, terminated, and cleaned up — using only `kubectl`, with no Agenova claim or adapter.
@@ -66,7 +66,7 @@ Out of scope:
 
 ## Negative Case
 
-- With the Docker daemon stopped (or `kind`/`kubectl`/`curl` unavailable and uninstallable), the script exits non-zero with a specific prerequisite message and creates nothing.
+- With the Docker daemon stopped, `kind` absent from `PATH`, or `kubectl`/`curl` unavailable and uninstallable, the script exits non-zero with a specific prerequisite message (the `kind` message names `brew`/`port`/`choco`) and creates nothing.
 - If the sandbox never reaches Ready within the timeout, or the sandbox pod never terminates after deletion, the script prints an explicit failure with `kubectl get` / events dumps and exits non-zero — a timeout is never reported as a pass.
 - If the active kube context is not the script's managed context, every mutating subcommand (including teardown) refuses to run.
 
@@ -74,7 +74,7 @@ Out of scope:
 
 - [x] Scout the pinned upstream Agent Sandbox release: `v0.4.6` assets are `manifest.yaml` (core CRDs + `agent-sandbox-controller` in `agent-sandbox-system`) and `extensions.yaml` (Template/WarmPool/Claim CRDs, group `extensions.agents.x-k8s.io/v1alpha1`); minimal path is `SandboxTemplate` -> `SandboxWarmPool(replicas:1)` -> `SandboxClaim(sandboxTemplateRef.name + warmpool: <string>)`.
 - [x] Confirm this packet with the Owner (authorized 2026-08-31); record independent Reviewer approval on Ticket #50 as a PR gate.
-- [x] Implement tool resolution: use existing `kind`/`kubectl` when present, pinned checksum-verified binary in `.tmp/` when absent; verify the kube context before any mutation.
+- [x] Implement tool resolution: use existing `kind`/`kubectl` when present; a missing `kind` fails loudly with the package-manager commands (never downloaded, Owner decision 2026-09-10); a missing `kubectl` is fetched as a checksum-verified pinned binary in `.tmp/`; verify the kube context before any mutation.
 - [x] Implement cluster up + pinned Agent Sandbox install + readiness wait + version/readiness recording.
 - [x] Implement the create / observe / terminate / cleanup smoke path with explicit failure reporting.
 - [x] Split the lifecycle into `smoke` (create + observe Ready, fixtures left in place for inspection) and `teardown` (delete claim/pool/template, assert pods -> 0, drop the namespace); `all` runs `up -> smoke -> teardown -> down`.
@@ -100,8 +100,8 @@ Verification status (2026-09-09 collaboration on PR #99):
 
 ## Evidence Required
 
-- `docs/evidence/E8-T3/agent-sandbox-substrate/summary.md`: ticket, gate, date, branch/commit, exact command, pinned Agent Sandbox and `kind` versions, kube context, and pass/fail result.
-- `docs/evidence/E8-T3/agent-sandbox-substrate/output.txt`: raw output of a real run showing `kind` install, version/readiness records, the sandbox reaching Ready, termination, and scoped cleanup.
+- `docs/evidence/E8-T3/agent-sandbox-substrate/summary.md`: ticket, gate, date, branch/commit, exact command, pinned Agent Sandbox version, resolved `kind`/`kubectl`/server versions, kube context, and pass/fail result.
+- `docs/evidence/E8-T3/agent-sandbox-substrate/output.txt`: raw output of a real run showing the resolved tool versions, CRD served/storage and controller records, the sandbox reaching Ready, termination, and scoped cleanup.
 - A short prose note of any upstream behavior finding, linked to #48 and #51, with no contract change.
 - Passing `./scripts/check.ps1 -Docs`. Prose-only confirmation is not evidence.
 
@@ -118,15 +118,16 @@ Verification status (2026-09-09 collaboration on PR #99):
 ## Decisions and Blockers
 
 - Planning depth: Task only. One bounded S-size spike inside the E8 spike/test boundary; no shared contract, schema, or multi-approach decision is involved, so no `spec.md` or `design.md`.
-- Decision (Owner-confirmed 2026-08-31): the script prefers an existing `kind`/`kubectl` on `PATH` and skips installing them; when a tool is absent it fetches a pinned, checksum-verified official release binary into `.tmp/`. It only *checks* for the Docker daemon and `curl`, failing loudly when they are missing — installing a container engine is out of scope.
+- Decision (Owner-confirmed 2026-08-31, revised 2026-09-10): the script prefers an existing `kind`/`kubectl` on `PATH` and skips installing them. A missing `kubectl` is fetched as a pinned, checksum-verified official release binary into `.tmp/`. A missing `kind` is **not** fetched — see the 2026-09-10 decision below. It only *checks* for the Docker daemon and `curl`, failing loudly when they are missing — installing a container engine is out of scope.
+- Decision (Owner, 2026-09-10): the harness no longer downloads `kind`. `kind` must already be on `PATH`, installed with a supported package manager per the upstream quick-start (`https://kind.sigs.k8s.io/docs/user/quick-start/#installing-with-a-package-manager`): macOS `brew install kind` or `sudo port selfupdate && sudo port install kind`; Windows `choco install kind`. A missing `kind` exits non-zero printing those commands. Rationale: the pinned-binary download for `kind` added the Windows-asset-name special-casing flagged in the #99 review and a checksum/cache code path that a one-line package-manager install replaces; `kubectl`'s official `dl.k8s.io` download is simpler and stays. This supersedes the 2026-08-31 "install `kind` via its pinned official release binary" decision.
 - Decision: reuse the kube context name `kind-agenova-k8s-lab` that `./scripts/check.ps1 -Integration -KubeContext kind-agenova-k8s-lab` already expects, so #51 can reuse this substrate.
 - Decision (Owner-confirmed 2026-08-31): pin upstream Agent Sandbox **`v0.4.6`** (`extensions.agents.x-k8s.io/v1alpha1`), matching the rest of the codebase — the `internal/runtime/agentsandbox` adapter, `docs/backends/agent-sandbox.md`, `THIRD_PARTY_NOTICES.md`, and the `scripts/checks/repository.ps1` check are all on `v0.4.6`. This keeps the substrate consistent with the shipped adapter. Assets for `v0.4.6` are `manifest.yaml` (core) + `extensions.yaml`. Adopting a newer upstream release across the whole E8 surface is deferred and tracked by the #66 mapping spike.
-- Decision (Owner-confirmed 2026-08-31): install `kind` via its pinned official release binary, not `go install` or a package manager. Pin an exact `kind` version in the script; download the release binary for the host OS/arch, verify the published SHA256, cache it under the gitignored `.tmp/`, and reuse a `PATH` `kind` at its existing version and record it. This keeps reruns deterministic and never mutates the developer's system `PATH` or existing `kind`.
+- Decision (Owner-confirmed 2026-08-31, **superseded 2026-09-10**): originally the script downloaded a pinned `kind` release binary into `.tmp/` when `kind` was absent. Replaced by the 2026-09-10 decision above — `kind` is now a package-manager prerequisite and is never downloaded.
 - Owner authorization: the Owner explicitly approved this packet and requested execution and a local test on 2026-08-31, and will review the resulting PR. Independent Reviewer approval on Ticket #50 remains a PR gate.
 - Owner machine baseline (2026-08-31, Darwin arm64): `kind v0.32.0` and `kubectl v1.36.2` are already installed via Homebrew, so the pinned-binary install path will not be exercised there (the skip path will). The recorded early prerequisite failure was later followed by a successful legacy run; it is historical, not the current blocker.
 - Decision: the smoke fixtures use a bare `busybox:1.36` `sleep` pod with no `volumeClaimTemplates`, `runtimeClassName`, or `NetworkPolicy` — kind has no pre-provisioned RWO storage class and the ticket only needs one observable lifecycle, not a hardened template.
-- Decision: keep one `bash` script (no PowerShell port) for cross-platform use. macOS/Linux run it directly; Windows runs it under WSL2 (recommended — Docker Desktop's `kind` support uses the WSL2 backend) or Git Bash. The script normalises `mingw/msys/cygwin` to a `windows` OS and uses `.exe` for local destinations; the upstream kind Windows asset has no `.exe` suffix, while kubectl's does. Rationale: the heavy lifting (`kind`, `kubectl`, `docker`) is identical across platforms and only the ~250-line wrapper differs; a `bash` + WSL2/Git Bash story is standard for kind harnesses and far less code than maintaining a parallel `.ps1`. Revisit only if a contributor genuinely cannot use WSL2 or Git Bash.
-- Decision: `kind`/`kubectl` pinned fallbacks are `v0.33.0` / `v1.34.0` (only used when the tool is absent); the Owner machine already has both via Homebrew so its recorded run will show `existing`.
+- Decision: keep one `bash` script (no PowerShell port) for cross-platform use. macOS/Linux run it directly; Windows runs it under WSL2 (recommended — Docker Desktop's `kind` support uses the WSL2 backend) or Git Bash. The script normalises `mingw/msys/cygwin` to a `windows` OS and uses `.exe` for the local `kubectl` destination. Rationale: the heavy lifting (`kind`, `kubectl`, `docker`) is identical across platforms and only the ~250-line wrapper differs; a `bash` + WSL2/Git Bash story is standard for kind harnesses and far less code than maintaining a parallel `.ps1`. Revisit only if a contributor genuinely cannot use WSL2 or Git Bash.
+- Decision: the `kubectl` pinned fallback is `v1.34.0` (only used when `kubectl` is absent); `kind` has no pin here (install via package manager). The Owner machine has both via Homebrew so its recorded run shows `existing`.
 - Blocker (2026-09-09): no Docker executable/daemon was found on Frank's Windows repair machine. Leo or another Docker-equipped environment must run the final committed script twice and capture current evidence. Required endpoints remain github.com, dl.k8s.io, and registry.k8s.io.
 
 - Review remediation: use a checkout-local cluster fingerprint (Docker container ID + kube-system UID), a namespace ownership label, and explicit context checks before mutation/deletion. Unowned existing labs must be inspected manually, never adopted.

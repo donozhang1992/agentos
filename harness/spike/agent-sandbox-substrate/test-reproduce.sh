@@ -181,13 +181,16 @@ owned_reentry() {
   cmd_up; cmd_smoke; cmd_smoke; cmd_teardown; cmd_teardown; cmd_down; cmd_down
   ! grep -q '^kind create$' "${CASE_DIR}/mutations"
 }
-windows_kind_url() {
-  host_os() { printf windows; }; host_arch() { printf amd64; }
-  local path
-  path="$(download_pinned_tool kind v0.33.0)"
-  [[ "$path" == *kind-v0.33.0-windows-amd64.exe ]]
-  grep -q '/kind-windows-amd64.sha256sum$' "${CASE_DIR}/downloads"
-  ! grep -q '/kind-windows-amd64.exe' "${CASE_DIR}/downloads"
+kind_requires_package_manager() {
+  # kind is never downloaded: a missing kind is a loud prerequisite failure
+  # pointing at the supported package managers, on every platform.
+  source "${HERE}/reproduce.sh"
+  TOOLS_DIR="${CASE_DIR}/tools"; DOWNLOAD_DIR="${CASE_DIR}/manifests"
+  command() { if [ "${2:-}" = kind ]; then return 1; fi; builtin command "$@"; }
+  expect_failure 'package manager' require_kind
+  expect_failure 'package manager' cmd_up
+  expect_failure 'no auto-install rule for kind' download_pinned_tool kind v0.33.0
+  [ ! -s "${CASE_DIR}/downloads" ]
 }
 diagnostics_and_scope() {
   owned
@@ -202,13 +205,13 @@ diagnostics_and_scope() {
   # Restore the real resolver and make absence deterministic using command().
   source "${HERE}/reproduce.sh"
   command() { if [ "${2:-}" = kind ]; then return 1; fi; builtin command "$@"; }
-  expect_failure 'diagnostics do not download' cmd_tools
+  expect_failure 'package manager' cmd_tools
   [ ! -s "${CASE_DIR}/downloads" ]
 }
 for scenario in foreign_cluster replaced_cluster wrong_context foreign_namespace \
   namespace_read_failure cluster_list_failure docker_unavailable readiness_timeout \
   pod_read_failure pod_cleanup_timeout namespace_cleanup_timeout owned_reruns \
-  owned_reentry windows_kind_url diagnostics_and_scope; do
+  owned_reentry kind_requires_package_manager diagnostics_and_scope; do
   run_case "$scenario"
 done
 printf '[pass] 15 isolated regression scenarios (command doubles only)\n'

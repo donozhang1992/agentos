@@ -11,22 +11,29 @@ It also needs curl, a SHA256 utility, Git and access to GitHub, dl.k8s.io and
 registry.k8s.io. Git Bash regression tests cover command construction and failure
 handling; they do not prove a real Windows Kubernetes run.
 
-Existing kind/kubectl binaries on PATH are used as-is and their versions recorded.
-When absent, mutating phases download checksum-verified official binaries to
-gitignored `.tmp/agenova-k8s-lab-tools/`. Diagnostics never download tools.
-Cached filenames include version, OS and architecture.
+**Install `kind` yourself with a supported package manager** — the harness does
+not download it (Owner decision 2026-09-10). Per the upstream
+[quick-start](https://kind.sigs.k8s.io/docs/user/quick-start/#installing-with-a-package-manager):
+macOS `brew install kind` or `sudo port selfupdate && sudo port install kind`;
+Windows `choco install kind`. A missing `kind` is a loud prerequisite failure
+that prints these commands, never a download. An existing `kind` on PATH is used
+as-is and its version recorded.
+
+`kubectl` on PATH is likewise used as-is; only when it is absent does a mutating
+phase download a checksum-verified official binary to gitignored
+`.tmp/agenova-k8s-lab-tools/` (filename qualified by version, OS and arch).
+Diagnostics never download anything.
 
 | Pin | Value | Meaning |
 | --- | --- | --- |
 | Agent Sandbox | v0.4.6 | Core `manifest.yaml` + `extensions.yaml`, v1alpha1 APIs |
-| kind fallback | v0.33.0 | Only used when kind is absent |
+| kind | not pinned here | Install via package manager; existing version used as-is and recorded |
 | kubectl fallback | v1.34.0 | Only used when kubectl is absent; not a server-version claim |
 
-Pins live in `reproduce.sh`. A fallback pin does not constrain an existing
-installation or prove which Kubernetes node image it uses. The actual server
-version is recorded. On Windows the upstream kind asset is
-`kind-windows-amd64` and its checksum ends in `.sha256sum`; only the local
-executable has an `.exe` suffix. kubectl's Windows asset does include `.exe`.
+Pins live in `reproduce.sh`. The kubectl fallback pin does not constrain an
+existing installation or prove which Kubernetes node image it uses; the actual
+server version is recorded. On Windows the upstream kubectl asset includes an
+`.exe` suffix.
 
 ## Run it
 
@@ -97,8 +104,9 @@ bash harness/spike/agent-sandbox-substrate/test-reproduce.sh
 
 The regression gate uses command doubles only and never contacts Docker or
 Kubernetes. It tests foreign/replaced clusters, wrong contexts, namespace ownership,
-lookup failures, timeout failures, idempotent owned reruns, Windows download URLs
-and diagnostic evidence preservation. This does not prove upstream behavior.
+lookup failures, timeout failures, idempotent owned reruns, the `kind` package-manager
+prerequisite failure and diagnostic evidence preservation. This does not prove
+upstream behavior.
 
 Run the repository baseline separately:
 
