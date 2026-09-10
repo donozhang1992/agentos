@@ -47,8 +47,10 @@ func TestPolicyBundleDeniesUnmatchedRules(t *testing.T) {
 		team, action, project, template string
 	}{
 		"missing team":     {action: "claim.create", project: "payments", template: "engineer"},
+		"blank team":       {team: "   ", action: "claim.create", project: "payments", template: "engineer"},
 		"unknown team":     {team: "team-b", action: "claim.create", project: "payments", template: "engineer"},
 		"missing action":   {team: "team-a", project: "payments", template: "engineer"},
+		"blank action":     {team: "team-a", action: "\t", project: "payments", template: "engineer"},
 		"unknown action":   {team: "team-a", action: "claim.delete", project: "payments", template: "engineer"},
 		"unknown project":  {team: "team-a", action: "claim.create", project: "ledger", template: "engineer"},
 		"unknown template": {team: "team-a", action: "claim.create", project: "payments", template: "reviewer"},
@@ -73,24 +75,46 @@ func TestLoaderRejectsMalformedAndDuplicateRulesWithoutReplacement(t *testing.T)
 		"missing ID": {
 			Version: "2",
 		},
+		"blank ID": {
+			ID: "   ", Version: "2",
+		},
 		"missing version": {
 			ID: "replacement",
+		},
+		"blank version": {
+			ID: "replacement", Version: "\t\n",
 		},
 		"missing team": {
 			ID: "replacement", Version: "2",
 			Rules: []Rule{{Action: "claim.create", Project: "payments", TemplateRef: "engineer"}},
 		},
+		"blank team": {
+			ID: "replacement", Version: "2",
+			Rules: []Rule{{Team: "   ", Action: "claim.create", Project: "payments", TemplateRef: "engineer"}},
+		},
 		"missing action": {
 			ID: "replacement", Version: "2",
 			Rules: []Rule{{Team: "team-a", Project: "payments", TemplateRef: "engineer"}},
+		},
+		"blank action": {
+			ID: "replacement", Version: "2",
+			Rules: []Rule{{Team: "team-a", Action: "\t", Project: "payments", TemplateRef: "engineer"}},
 		},
 		"missing project": {
 			ID: "replacement", Version: "2",
 			Rules: []Rule{{Team: "team-a", Action: "claim.create", TemplateRef: "engineer"}},
 		},
+		"blank project": {
+			ID: "replacement", Version: "2",
+			Rules: []Rule{{Team: "team-a", Action: "claim.create", Project: "  ", TemplateRef: "engineer"}},
+		},
 		"missing template": {
 			ID: "replacement", Version: "2",
 			Rules: []Rule{{Team: "team-a", Action: "claim.create", Project: "payments"}},
+		},
+		"blank template": {
+			ID: "replacement", Version: "2",
+			Rules: []Rule{{Team: "team-a", Action: "claim.create", Project: "payments", TemplateRef: "\n"}},
 		},
 		"malformed rule": {
 			ID: "replacement", Version: "2",

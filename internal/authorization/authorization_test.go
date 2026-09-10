@@ -146,9 +146,18 @@ func TestAuthorizerRejectsMissingContext(t *testing.T) {
 }
 
 func TestGateDoesNotTreatApprovalRequiredAsAllow(t *testing.T) {
+	request := loadRequestFixture(t)
+	input := inputFor(request, loadIssuedFixture(t, "valid-team-a-engineer.json").Principal)
 	calls := 0
-	gate := Gate{Evaluator: fixedEvaluator{decision: v1alpha1.Decision{Result: v1alpha1.DecisionResultApprovalRequired}}}
-	decision, err := gate.Admit(Request{}, func(Admission) error { calls++; return nil })
+	evaluation := completeEvaluation(input, v1alpha1.Decision{
+		PrincipalRef: input.Principal.Subject,
+		Action:       input.Action.Name,
+		Result:       v1alpha1.DecisionResultApprovalRequired,
+		PolicyRef:    v1alpha1.PolicyReference{ID: "reference-default-deny", Version: "1"},
+		Reason:       "approval is required",
+	})
+	gate := Gate{Evaluator: fixedEvaluator{evaluation: evaluation}}
+	decision, err := gate.Admit(input, func(Admission) error { calls++; return nil })
 	if err != nil || decision.Result != v1alpha1.DecisionResultApprovalRequired || calls != 0 {
 		t.Fatalf("decision/error/calls = %+v/%v/%d", decision, err, calls)
 	}
@@ -157,10 +166,11 @@ func TestGateDoesNotTreatApprovalRequiredAsAllow(t *testing.T) {
 func TestGateRejectsMalformedAllowBeforeContinuation(t *testing.T) {
 	request := loadRequestFixture(t)
 	input := inputFor(request, loadIssuedFixture(t, "valid-team-a-engineer.json").Principal)
-	valid, err := (Authorizer{Policies: matchingPolicy(t)}).Evaluate(input)
+	validEvaluation, err := (Authorizer{Policies: matchingPolicy(t)}).Evaluate(input)
 	if err != nil {
 		t.Fatal(err)
 	}
+	valid := validEvaluation.Decision()
 
 	tests := map[string]struct {
 		path   string
@@ -180,7 +190,8 @@ func TestGateRejectsMalformedAllowBeforeContinuation(t *testing.T) {
 			decision := valid
 			test.mutate(&decision)
 			calls := 0
-			_, validationErr := (Gate{Evaluator: fixedEvaluator{decision: decision}}).Admit(input, func(Admission) error {
+			evaluation := Evaluation{request: input, decision: decision}
+			_, validationErr := (Gate{Evaluator: fixedEvaluator{evaluation: evaluation}}).Admit(input, func(Admission) error {
 				calls++
 				return nil
 			})
@@ -192,9 +203,100 @@ func TestGateRejectsMalformedAllowBeforeContinuation(t *testing.T) {
 	}
 }
 
-type fixedEvaluator struct{ decision v1alpha1.Decision }
+func TestGateValidatesInputBeforeEvaluator(t *testing.T) {
+	request := loadRequestFixture(t)
+	input := inputFor(request, loadIssuedFixture(t, "valid-team-a-engineer.json").Principal)
+	input.Action.Name = "claim.delete"
+	evaluator := &spyEvaluator{}
+	calls := 0
 
-func (f fixedEvaluator) Evaluate(Request) (v1alpha1.Decision, error) { return f.decision, nil }
+	_, err := (Gate{Evaluator: evaluator}).Admit(input, func(Admission) error { calls++; return nil })
+	validationErr, ok := err.(*v1alpha1.ValidationError)
+	if !ok || validationErr.FieldPath != "action.name" || evaluator.calls != 0 || calls != 0 {
+		t.Fatalf("error/evaluator/continuation calls = %#v/%d/%d, want action.name validation and zero calls", err, evaluator.calls, calls)
+	}
+}
+
+func TestGateRejectsEvaluationBoundToDifferentRequest(t *testing.T) {
+	request := loadRequestFixture(t)
+	principal := loadIssuedFixture(t, "valid-team-a-engineer.json").Principal
+	original := inputFor(request, principal)
+	evaluation, err := (Authorizer{Policies: matchingPolicy(t)}).Evaluate(original)
+	if err != nil {
+		t.Fatal(err)
+	}
+	replayed := original
+	replayed.Action.Project = "ledger"
+	calls := 0
+
+	_, err = (Gate{Evaluator: fixedEvaluator{evaluation: evaluation}}).Admit(replayed, func(Admission) error { calls++; return nil })
+	validationErr, ok := err.(*v1alpha1.ValidationError)
+	if !ok || validationErr.FieldPath != "evaluation.request" || calls != 0 {
+		t.Fatalf("error/calls = %#v/%d, want bound-request validation and zero calls", err, calls)
+	}
+}
+
+func TestDecisionIDsDistinguishEvaluationContextAndPolicyVersion(t *testing.T) {
+	request := loadRequestFixture(t)
+	teamA := inputFor(request, loadIssuedFixture(t, "valid-team-a-engineer.json").Principal)
+	teamB := inputFor(request, loadIssuedFixture(t, "valid-team-b-denial.json").Principal)
+	teamAEvaluation, err := (Authorizer{Policies: matchingPolicy(t)}).Evaluate(teamA)
+	if err != nil {
+		t.Fatal(err)
+	}
+	teamBEvaluation, err := (Authorizer{Policies: matchingPolicy(t)}).Evaluate(teamB)
+	if err != nil {
+		t.Fatal(err)
+	}
+	versionTwo := &policy.Loader{}
+	if err := versionTwo.Load(policy.PolicyBundle{
+		ID: "reference-default-deny", Version: "2",
+		Rules: []policy.Rule{{Team: "team-a", Action: "claim.create", Project: "payments", TemplateRef: "engineer"}},
+	}); err != nil {
+		t.Fatal(err)
+	}
+	versionTwoEvaluation, err := (Authorizer{Policies: versionTwo}).Evaluate(teamA)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	teamAID := teamAEvaluation.Decision().ID
+	if teamAID == teamBEvaluation.Decision().ID || teamAID == versionTwoEvaluation.Decision().ID {
+		t.Fatalf("decision IDs must distinguish principal and policy context: %q", teamAID)
+	}
+}
+
+func TestDecisionIDEncodingIsUnambiguousWhenFieldsContainNUL(t *testing.T) {
+	request := loadRequestFixture(t)
+	base := inputFor(request, loadIssuedFixture(t, "valid-team-a-engineer.json").Principal)
+	first := base
+	first.Principal.Subject = "a\x00b"
+	first.Principal.Team = "c"
+	second := base
+	second.Principal.Subject = "a"
+	second.Principal.Team = "b\x00c"
+	decision := v1alpha1.Decision{
+		Action:    assignmentCreateAction,
+		Result:    v1alpha1.DecisionResultDeny,
+		PolicyRef: v1alpha1.PolicyReference{ID: "reference-default-deny", Version: "1"},
+		Reason:    "no exact policy rule matched the trusted principal and requested assignment",
+	}
+
+	if decisionID(first, decision) == decisionID(second, decision) {
+		t.Fatal("length-prefixed decision ID encoding must distinguish field boundaries")
+	}
+}
+
+type fixedEvaluator struct{ evaluation Evaluation }
+
+func (f fixedEvaluator) Evaluate(Request) (Evaluation, error) { return f.evaluation, nil }
+
+type spyEvaluator struct{ calls int }
+
+func (s *spyEvaluator) Evaluate(Request) (Evaluation, error) {
+	s.calls++
+	return Evaluation{}, nil
+}
 
 func inputFor(request *v1alpha1.ClaimRequest, principal v1alpha1.Principal) Request {
 	return Request{
