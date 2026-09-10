@@ -64,6 +64,7 @@ The [spec case matrix](spec.md#negative-cases) covers traversal and alias escape
 - [x] Implement the smallest filesystem semantic slice against that seam, with reference cases and explicit simulation labels.
 - [x] Add a controlled local repository/compile/test/output compatibility fixture, separate from security evidence.
 - [x] Complete the capability/gap handoff, focused and repository gates, final review, and merge decision.
+- [x] Reopen after post-merge exhaustive review and harden pre-Start, runtime-read-only, export-cutoff, failed-termination ordering, credential scrubbing, hard-link, and evidence-provenance cases.
 
 ## Quality Gates
 
@@ -103,4 +104,5 @@ After implementation is unblocked:
 - Shared allocation/observation now report neutral filesystem boundary and evidence values. The reference model reports `Simulated`; Agent Sandbox reports `Unsupported` until #48 maps and #51 proves the real substrate.
 - Planning review correction: use independent-claim isolation rather than parent/child lineage, and do not imply that Agenova already has a generic artifact-output API. The integration must select an approved governed operation; the collector remains test-only.
 - [Capability and evidence handoff to #48/#51](handoff-0048-0051.md).
+- Post-merge exhaustive review of #112 identified evidence gaps. The follow-up requires the critical worker-observable cases explicitly in #51 and strengthens the reference/local fixtures without adding a production filesystem API.
 - The requested `docs/aidlc.md` does not exist at this baseline; `docs/development/AIDLC.md` is the canonical workflow linked by AGENTS.md.

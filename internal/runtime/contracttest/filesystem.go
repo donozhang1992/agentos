@@ -17,11 +17,16 @@ import (
 // contract. These probes are test controls, not RuntimeBackend operations and
 // not a filesystem gateway.
 type FilesystemFixture struct {
-	Backend         runtime.RuntimeBackend
-	TemplateRef     string
-	WriteTaskFile   func(v1alpha1.SandboxClaimBackendIdentity, string, []byte) error
-	ReadTaskFile    func(v1alpha1.SandboxClaimBackendIdentity, string) ([]byte, error)
-	OutsideSentinel func() []byte
+	Backend           runtime.RuntimeBackend
+	TemplateRef       string
+	WriteTaskFile     func(v1alpha1.SandboxClaimBackendIdentity, string, []byte) error
+	ReadTaskFile      func(v1alpha1.SandboxClaimBackendIdentity, string) ([]byte, error)
+	ExportTaskFile    func(v1alpha1.SandboxClaimBackendIdentity, string) ([]byte, error)
+	ReadRuntimeFile   func(v1alpha1.SandboxClaimBackendIdentity, string) ([]byte, error)
+	WriteRuntimeFile  func(v1alpha1.SandboxClaimBackendIdentity, string, []byte) error
+	OutsideSentinel   func() []byte
+	RuntimeSentinel   func() []byte
+	FailNextTerminate func(v1alpha1.SandboxClaimBackendIdentity, error)
 }
 
 // RunFilesystem exercises the backend-neutral filesystem description and
@@ -34,10 +39,13 @@ func RunFilesystem(t *testing.T, newFixture func(t *testing.T) FilesystemFixture
 		fn   func(*testing.T, FilesystemFixture)
 	}{
 		{"FS-P1 reports one simulated ephemeral task directory", testFilesystemDescription},
+		{"FS-N0 denies task access before explicit Start", testFilesystemBeforeStart},
 		{"FS-P2 reads and writes task data after explicit start", testFilesystemTaskData},
+		{"FS-P4 reads but cannot mutate the runtime fixture", testFilesystemRuntimeReadOnly},
 		{"FS-N1 rejects outside and traversal writes", testFilesystemOutsideBoundary},
 		{"FS-N4 replacement claim receives fresh data", testFilesystemFreshReplacement},
-		{"FS-N7 and FS-N8 deny access after termination and cleanup", testFilesystemLifecycle},
+		{"FS-N7 rejects export after successful termination", testFilesystemLifecycle},
+		{"FS-N8 cleanup stops while termination remains incomplete", testFilesystemTerminationFailure},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
@@ -50,8 +58,29 @@ func RunFilesystem(t *testing.T, newFixture func(t *testing.T) FilesystemFixture
 
 func requireFilesystemFixture(t *testing.T, f FilesystemFixture) {
 	t.Helper()
-	if f.Backend == nil || f.TemplateRef == "" || f.WriteTaskFile == nil || f.ReadTaskFile == nil || f.OutsideSentinel == nil {
-		t.Fatal("filesystem fixture requires backend, template and model read/write probes")
+	if f.Backend == nil || f.TemplateRef == "" || f.WriteTaskFile == nil || f.ReadTaskFile == nil || f.ExportTaskFile == nil ||
+		f.ReadRuntimeFile == nil || f.WriteRuntimeFile == nil || f.OutsideSentinel == nil || f.RuntimeSentinel == nil || f.FailNextTerminate == nil {
+		t.Fatal("filesystem fixture requires backend, task/export/runtime probes, sentinels and termination failure control")
+	}
+}
+
+func testFilesystemBeforeStart(t *testing.T, f FilesystemFixture) {
+	alloc := allocateFilesystem(t, f, "fs-before-start")
+	before := f.OutsideSentinel()
+	if err := f.WriteTaskFile(alloc.Identity, "repo/early.txt", []byte("early")); err == nil {
+		t.Fatal("task write before Start succeeded")
+	}
+	if _, err := f.ReadTaskFile(alloc.Identity, "repo/early.txt"); err == nil {
+		t.Fatal("task read before Start succeeded")
+	}
+	if after := f.OutsideSentinel(); !bytes.Equal(after, before) {
+		t.Fatalf("pre-Start probe changed outside sentinel: before %q after %q", before, after)
+	}
+	if err := f.Backend.Start(alloc.Identity); err != nil {
+		t.Fatalf("start after pre-Start probes: %v", err)
+	}
+	if _, err := f.ReadTaskFile(alloc.Identity, "repo/early.txt"); err == nil {
+		t.Fatal("rejected pre-Start write became visible after Start")
 	}
 }
 
@@ -89,6 +118,21 @@ func testFilesystemTaskData(t *testing.T, f FilesystemFixture) {
 	}
 }
 
+func testFilesystemRuntimeReadOnly(t *testing.T, f FilesystemFixture) {
+	alloc := startFilesystem(t, f, "fs-runtime-readonly")
+	want := f.RuntimeSentinel()
+	got, err := f.ReadRuntimeFile(alloc.Identity, "/runtime/agent")
+	if err != nil || !bytes.Equal(got, want) {
+		t.Fatalf("runtime read = %q, error = %v, want %q", got, err, want)
+	}
+	if err := f.WriteRuntimeFile(alloc.Identity, "/runtime/agent", []byte("mutated")); !errors.Is(err, runtime.ErrFilesystemBoundary) {
+		t.Fatalf("runtime write error = %v, want ErrFilesystemBoundary", err)
+	}
+	if after := f.RuntimeSentinel(); !bytes.Equal(after, want) {
+		t.Fatalf("runtime sentinel changed: before %q after %q", want, after)
+	}
+}
+
 func testFilesystemOutsideBoundary(t *testing.T, f FilesystemFixture) {
 	alloc := startFilesystem(t, f, "fs-outside")
 	before := f.OutsideSentinel()
@@ -121,20 +165,62 @@ func testFilesystemFreshReplacement(t *testing.T, f FilesystemFixture) {
 
 func testFilesystemLifecycle(t *testing.T, f FilesystemFixture) {
 	alloc := startFilesystem(t, f, "fs-lifecycle")
-	if err := f.WriteTaskFile(alloc.Identity, "repo/output.txt", []byte("unexported")); err != nil {
+	exportedWant := []byte("exported-before-termination")
+	if err := f.WriteTaskFile(alloc.Identity, "repo/exported.txt", exportedWant); err != nil {
+		t.Fatal(err)
+	}
+	exported, err := f.ExportTaskFile(alloc.Identity, "repo/exported.txt")
+	if err != nil || !bytes.Equal(exported, exportedWant) {
+		t.Fatalf("pre-termination export = %q, error = %v", exported, err)
+	}
+	if err := f.WriteTaskFile(alloc.Identity, "repo/unexported.txt", []byte("must-not-export")); err != nil {
 		t.Fatal(err)
 	}
 	if err := f.Backend.Terminate(alloc.Identity); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := f.ReadTaskFile(alloc.Identity, "repo/output.txt"); !errors.Is(err, runtime.ErrTerminated) {
+	if _, err := f.ReadTaskFile(alloc.Identity, "repo/unexported.txt"); !errors.Is(err, runtime.ErrTerminated) {
 		t.Fatalf("read after termination = %v, want ErrTerminated", err)
+	}
+	if late, err := f.ExportTaskFile(alloc.Identity, "repo/unexported.txt"); !errors.Is(err, runtime.ErrTerminated) || late != nil {
+		t.Fatalf("post-termination export = %q, error = %v, want nil/ErrTerminated", late, err)
+	}
+	if !bytes.Equal(exported, exportedWant) {
+		t.Fatalf("acknowledged export changed after termination: %q", exported)
 	}
 	if _, err := f.Backend.Cleanup(alloc.Identity); err != nil {
 		t.Fatal(err)
 	}
 	if err := f.WriteTaskFile(alloc.Identity, "repo/late.txt", []byte("late")); !errors.Is(err, runtime.ErrReleased) {
 		t.Fatalf("write after cleanup = %v, want ErrReleased", err)
+	}
+}
+
+func testFilesystemTerminationFailure(t *testing.T, f FilesystemFixture) {
+	alloc := startFilesystem(t, f, "fs-termination-failure")
+	if err := f.WriteTaskFile(alloc.Identity, "repo/live.txt", []byte("still-live")); err != nil {
+		t.Fatal(err)
+	}
+	first := errors.New("injected explicit termination failure")
+	f.FailNextTerminate(alloc.Identity, first)
+	if err := f.Backend.Terminate(alloc.Identity); !errors.Is(err, first) {
+		t.Fatalf("termination error = %v, want injected failure", err)
+	}
+	second := errors.New("injected cleanup termination failure")
+	f.FailNextTerminate(alloc.Identity, second)
+	result, err := f.Backend.Cleanup(alloc.Identity)
+	if !errors.Is(err, second) || result.Released || result.Replaced {
+		t.Fatalf("cleanup while termination incomplete = %+v, %v", result, err)
+	}
+	obs, err := f.Backend.Observe(alloc.Identity)
+	if err != nil || obs.Released || obs.Replaced {
+		t.Fatalf("failed termination fabricated cleanup: %+v, %v", obs, err)
+	}
+	if got, err := f.ReadTaskFile(alloc.Identity, "repo/live.txt"); err != nil || !bytes.Equal(got, []byte("still-live")) {
+		t.Fatalf("failed termination/cleanup released task data: %q, %v", got, err)
+	}
+	if _, err := f.Backend.Cleanup(alloc.Identity); err != nil {
+		t.Fatalf("cleanup retry after termination succeeds: %v", err)
 	}
 }
 

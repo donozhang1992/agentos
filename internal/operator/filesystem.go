@@ -15,6 +15,8 @@ import (
 
 var errTaskFileNotFound = errors.New("reference filesystem: task file not found")
 
+const referenceRuntimeFile = "/runtime/agent"
+
 // writeTaskFile is a reference-model probe used by the reusable filesystem
 // contract suite. It is deliberately not part of RuntimeBackend: production
 // agents use ordinary filesystem APIs inside the boundary established by the
@@ -48,8 +50,36 @@ func (r *Runtime) readTaskFile(id v1alpha1.SandboxClaimBackendIdentity, target s
 	return append([]byte(nil), data...), nil
 }
 
+// exportTaskFile is the reference model's test-only stand-in for an approved
+// external output operation. It deliberately shares the active-work guard:
+// output bytes can leave the task directory only before termination.
+func (r *Runtime) exportTaskFile(id v1alpha1.SandboxClaimBackendIdentity, target string) ([]byte, error) {
+	return r.readTaskFile(id, target)
+}
+
+func (r *Runtime) readRuntimeFile(id v1alpha1.SandboxClaimBackendIdentity, target string) ([]byte, error) {
+	if _, err := r.activeFilesystem(id); err != nil {
+		return nil, err
+	}
+	if path.Clean(target) != referenceRuntimeFile {
+		return nil, fmt.Errorf("%w: %s", runtime.ErrFilesystemBoundary, target)
+	}
+	return append([]byte(nil), r.filesystemRuntimeSentinel...), nil
+}
+
+func (r *Runtime) writeRuntimeFile(id v1alpha1.SandboxClaimBackendIdentity, target string, _ []byte) error {
+	if _, err := r.activeFilesystem(id); err != nil {
+		return err
+	}
+	return fmt.Errorf("%w: runtime file is read-only: %s", runtime.ErrFilesystemBoundary, target)
+}
+
 func (r *Runtime) outsideFilesystemSentinel() []byte {
 	return append([]byte(nil), r.filesystemOutsideSentinel...)
+}
+
+func (r *Runtime) runtimeFilesystemSentinel() []byte {
+	return append([]byte(nil), r.filesystemRuntimeSentinel...)
 }
 
 func (r *Runtime) activeFilesystem(id v1alpha1.SandboxClaimBackendIdentity) (*allocation, error) {
