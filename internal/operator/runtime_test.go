@@ -45,6 +45,21 @@ func TestRuntimeBackendContract(t *testing.T) {
 	})
 }
 
+// TestRuntimeFilesystemContract proves the reference model's backend-neutral
+// filesystem semantics. It does not claim native-process isolation.
+func TestRuntimeFilesystemContract(t *testing.T) {
+	contracttest.RunFilesystem(t, func(t *testing.T) contracttest.FilesystemFixture {
+		r := newConfiguredRuntime(t)
+		return contracttest.FilesystemFixture{
+			Backend:         r,
+			TemplateRef:     testTemplate,
+			WriteTaskFile:   r.writeTaskFile,
+			ReadTaskFile:    r.readTaskFile,
+			OutsideSentinel: r.outsideFilesystemSentinel,
+		}
+	})
+}
+
 func newConfiguredRuntime(t *testing.T) *Runtime {
 	t.Helper()
 

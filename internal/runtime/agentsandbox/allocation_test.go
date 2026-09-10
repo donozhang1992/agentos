@@ -663,10 +663,16 @@ func TestReducedContractSupportMatrix(t *testing.T) {
 	k.readyOnApply = true
 	a := newTestAdapter(k)
 	alloc := allocateOK(t, a, "matrix")
+	if alloc.Filesystem.EvidenceLevel != runtime.FilesystemEvidenceUnsupported || alloc.Filesystem.WorkingDirectory != "" {
+		t.Fatalf("filesystem boundary must remain explicitly unsupported until #48/#51 verify it: %+v", alloc.Filesystem)
+	}
 
 	obs, err := a.Observe(alloc.Identity)
 	if err != nil || !obs.Ready {
 		t.Fatalf("Observe: supported (ready) expected, got %+v %v", obs, err)
+	}
+	if obs.Filesystem != alloc.Filesystem {
+		t.Fatalf("filesystem capability drifted between allocation and observation: %+v / %+v", alloc.Filesystem, obs.Filesystem)
 	}
 	if err := a.Start(alloc.Identity); !errors.Is(err, runtime.ErrUnsupported) {
 		t.Fatalf("Start: unsupported expected, got %v", err)
@@ -678,7 +684,7 @@ func TestReducedContractSupportMatrix(t *testing.T) {
 	if err != nil || !res.Released {
 		t.Fatalf("Cleanup: supported expected, got %+v %v", res, err)
 	}
-	t.Log("support matrix: Allocate=supported Observe=supported(readiness only) Start=unsupported Terminate=unsupported Cleanup=supported(release; replacement not observable); real-cluster evidence=blocked (no verified kube context)")
+	t.Log("support matrix: Allocate=supported Observe=supported(readiness only) Start=unsupported Terminate=unsupported Cleanup=supported(release; replacement not observable) Filesystem=unsupported; real-cluster evidence=blocked (no verified kube context)")
 }
 
 // Ownership checks must apply to worker identities

@@ -140,7 +140,13 @@ func (a *SpikeAdapter) Allocate(req runtime.AllocateRequest) (runtime.Allocation
 	identity := entry.identity()
 	a.mu.Unlock()
 
-	return runtime.Allocation{ClaimID: req.ClaimID, Identity: identity}, nil
+	return runtime.Allocation{
+		ClaimID:  req.ClaimID,
+		Identity: identity,
+		Filesystem: runtime.FilesystemBoundary{
+			EvidenceLevel: runtime.FilesystemEvidenceUnsupported,
+		},
+	}, nil
 }
 
 // beginAttempt validates the ClaimID against both allocation paths, resumes a
@@ -219,7 +225,13 @@ func (a *SpikeAdapter) Observe(id v1alpha1.SandboxClaimBackendIdentity) (runtime
 	detail := entry.detail
 	a.mu.Unlock()
 
-	obs := runtime.Observation{ClaimID: entry.claimID, Identity: entry.identity()}
+	obs := runtime.Observation{
+		ClaimID:  entry.claimID,
+		Identity: entry.identity(),
+		Filesystem: runtime.FilesystemBoundary{
+			EvidenceLevel: runtime.FilesystemEvidenceUnsupported,
+		},
+	}
 	if released {
 		obs.Released = true
 		obs.Detail = detail

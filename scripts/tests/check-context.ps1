@@ -13,13 +13,13 @@ try {
 
   # Run the real entry point in a child process. Replace only its check modules
   # so even a regressed guard cannot run Go, kubectl, or touch a real cluster.
-  foreach ($module in @("repository", "docs", "architecture", "contracts", "go", "backend")) {
+  foreach ($module in @("repository", "docs", "architecture", "contracts", "go", "frontend", "backend")) {
     Set-Content -LiteralPath (Join-Path $checksRoot "$module.ps1") -Value ""
   }
   $baselineCalls = @(
     "Test-RequiredDocs", "Test-OpenSourceMetadata", "Test-ArchitectureText",
     "Test-MarkdownLinks", "Test-RuntimeBoundary", "Test-CLICompositionBoundary",
-    "Test-DeliveryContracts", "Test-CheckContext", "Test-Go"
+    "Test-DeliveryContracts", "Test-CheckContext", "Test-Go", "Test-Frontend"
   )
   $stubs = '$CallLog = Join-Path (Split-Path -Parent $PSScriptRoot) "calls.txt"' + "`n"
   foreach ($name in $baselineCalls) {

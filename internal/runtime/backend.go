@@ -61,16 +61,52 @@ type AllocateRequest struct {
 	Input map[string]string
 }
 
+// FilesystemOutsideBoundary is the backend-neutral rule applied outside the
+// worker's task directory. It describes supported configuration, not a host
+// path policy or per-file authorization system.
+type FilesystemOutsideBoundary string
+
+const (
+	// FilesystemOutsideRuntimeReadOnlyOtherUnavailable permits backend runtime
+	// files to remain readable while all other task data outside the working
+	// directory is unavailable through the supported worker configuration.
+	FilesystemOutsideRuntimeReadOnlyOtherUnavailable FilesystemOutsideBoundary = "RuntimeReadOnlyOtherUnavailable"
+)
+
+// FilesystemEvidenceLevel states what an allocation has actually proved.
+// Simulated is useful contract evidence but is never hostile-process
+// isolation. BackendVerified requires separate real-backend evidence.
+type FilesystemEvidenceLevel string
+
+const (
+	FilesystemEvidenceUnsupported     FilesystemEvidenceLevel = "Unsupported"
+	FilesystemEvidenceSimulated       FilesystemEvidenceLevel = "Simulated"
+	FilesystemEvidenceBackendVerified FilesystemEvidenceLevel = "BackendVerified"
+)
+
+// FilesystemBoundary describes the single task filesystem made available to
+// one allocation. WorkingDirectory is worker-visible and backend-selected; it
+// is never a caller-selected host path. An empty directory with Unsupported
+// evidence reports a backend capability gap explicitly.
+type FilesystemBoundary struct {
+	WorkingDirectory string
+	OutsideBoundary  FilesystemOutsideBoundary
+	Ephemeral        bool
+	EvidenceLevel    FilesystemEvidenceLevel
+}
+
 // Allocation is the result of a successful Allocate.
 type Allocation struct {
-	ClaimID  string
-	Identity v1alpha1.SandboxClaimBackendIdentity
+	ClaimID    string
+	Identity   v1alpha1.SandboxClaimBackendIdentity
+	Filesystem FilesystemBoundary
 }
 
 // Observation is the backend's current resource evidence for one identity.
 type Observation struct {
-	ClaimID  string
-	Identity v1alpha1.SandboxClaimBackendIdentity
+	ClaimID    string
+	Identity   v1alpha1.SandboxClaimBackendIdentity
+	Filesystem FilesystemBoundary
 	// Ready is infrastructure readiness. It supports Bound and nothing more.
 	Ready bool
 	// Released reports that Cleanup confirmed resource release.
@@ -107,6 +143,10 @@ var (
 	// ErrUnsupported is returned when a backend cannot honestly provide the
 	// operation's semantics. It is never a silent pass.
 	ErrUnsupported = errors.New("runtime: operation unsupported by backend")
+	// ErrFilesystemBoundary is returned by reference/model probes when an
+	// operation targets data outside the allocation's task directory. Native
+	// worker isolation remains a backend responsibility.
+	ErrFilesystemBoundary = errors.New("runtime: outside task filesystem boundary")
 )
 
 // BackendClaim is the reference runtime's own state view of a claim

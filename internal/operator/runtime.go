@@ -22,16 +22,21 @@ type Runtime struct {
 	allocations   map[string]*allocation // ClaimID -> allocation
 	byWorker      map[string]string      // WorkerID -> ClaimID
 	readinessHold map[string]struct{}    // ClaimIDs whose next allocation stays not-ready
+
+	// filesystemOutsideSentinel is synthetic reference-model data used to
+	// prove rejected writes have no outside effect. It is never host data.
+	filesystemOutsideSentinel []byte
 }
 
 func NewRuntime() *Runtime {
 	return &Runtime{
-		templates:     make(map[string]v1alpha1.AgentSandboxTemplate),
-		pools:         make(map[string]*sandbox.WarmPool),
-		claims:        make(map[string]runtime.BackendClaim),
-		allocations:   make(map[string]*allocation),
-		byWorker:      make(map[string]string),
-		readinessHold: make(map[string]struct{}),
+		templates:                 make(map[string]v1alpha1.AgentSandboxTemplate),
+		pools:                     make(map[string]*sandbox.WarmPool),
+		claims:                    make(map[string]runtime.BackendClaim),
+		allocations:               make(map[string]*allocation),
+		byWorker:                  make(map[string]string),
+		readinessHold:             make(map[string]struct{}),
+		filesystemOutsideSentinel: []byte("reference-outside-sentinel"),
 	}
 }
 
