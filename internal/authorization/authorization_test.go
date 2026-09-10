@@ -266,6 +266,27 @@ func TestDecisionIDsDistinguishEvaluationContextAndPolicyVersion(t *testing.T) {
 	}
 }
 
+func TestDecisionIDEncodingIsUnambiguousWhenFieldsContainNUL(t *testing.T) {
+	request := loadRequestFixture(t)
+	base := inputFor(request, loadIssuedFixture(t, "valid-team-a-engineer.json").Principal)
+	first := base
+	first.Principal.Subject = "a\x00b"
+	first.Principal.Team = "c"
+	second := base
+	second.Principal.Subject = "a"
+	second.Principal.Team = "b\x00c"
+	decision := v1alpha1.Decision{
+		Action:    assignmentCreateAction,
+		Result:    v1alpha1.DecisionResultDeny,
+		PolicyRef: v1alpha1.PolicyReference{ID: "reference-default-deny", Version: "1"},
+		Reason:    "no exact policy rule matched the trusted principal and requested assignment",
+	}
+
+	if decisionID(first, decision) == decisionID(second, decision) {
+		t.Fatal("length-prefixed decision ID encoding must distinguish field boundaries")
+	}
+}
+
 type fixedEvaluator struct{ evaluation Evaluation }
 
 func (f fixedEvaluator) Evaluate(Request) (Evaluation, error) { return f.evaluation, nil }

@@ -204,7 +204,12 @@ func decisionID(input Request, decision v1alpha1.Decision) string {
 		string(decision.Result),
 		decision.Reason,
 	}
-	sum := sha256.Sum256([]byte(strings.Join(parts, "\x00")))
+	var payload strings.Builder
+	for _, part := range parts {
+		fmt.Fprintf(&payload, "%d:", len(part))
+		payload.WriteString(part)
+	}
+	sum := sha256.Sum256([]byte(payload.String()))
 	return fmt.Sprintf("decision:%s:authorization:%x", input.RequestRef, sum[:16])
 }
 
