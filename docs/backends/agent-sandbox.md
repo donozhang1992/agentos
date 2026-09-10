@@ -10,11 +10,38 @@ Kubernetes Agent Sandbox is the first real substrate used to test the `RuntimeBa
 - A selected runtime template can have a `SandboxWarmPool`.
 - One Agenova claim maps to one upstream sandbox acquisition.
 - Upstream sandbox identity is returned as backend evidence.
-- Upstream readiness can support the `Bound` to `Running` observation path.
+- Upstream readiness is `Bound`-level infrastructure evidence. It does not prove work start: the legacy spike `StartClaim` still treats `Ready=True` as `Running` (a known gap kept for the old integration path), while the reduced `RuntimeBackend` contract reports `Start` as unsupported.
 - Claim deletion triggers sandbox cleanup and warm-pool replenishment.
 - Upstream API details remain confined to `internal/runtime/agentsandbox`.
 
 The path was exercised with Agent Sandbox v0.4.6 on a local kind cluster. It must be re-run when promoting or changing the adapter.
+
+## Reduced RuntimeBackend Contract (Ticket #30)
+
+Support of the five reduced operations against the upstream controller, verified with a simulated controller at the `kubeClient` seam (`internal/runtime/agentsandbox/allocation_test.go`); real-cluster evidence for these operations is still a blocker (no verified test kube context in the current owner environment).
+
+| Operation | Support | Notes |
+| --- | --- | --- |
+| Allocate | supported, with an unprovable recovery case | Creates the upstream claim and waits for sandbox assignment. Recovery checks and reserves the assigned worker before deleting the claim, and completes only after both resources are confirmed absent. Unknown identities stay recovery-pending; conflicting identities retain their upstream claim without deletion. |
+| Observe | supported (readiness only) | `Ready` mirrors the upstream `Ready=True` condition, and only when the claim still carries the recorded worker; a different or missing worker is reported as an identity mismatch. Replacement is not observable and stays `false`. Query failures are returned as errors. |
+| Start | unsupported | The controller starts the pod on its own; there is no channel to acknowledge actual work start. |
+| Terminate | unsupported | No worker-stop evidence exists apart from resource deletion. |
+| Cleanup | supported (release) | `Released` is reported only after both the claim and the assigned sandbox are confirmed absent; timeouts and query failures are explicit errors and the call is retryable. |
+
+`kubectl` invocations carry a per-command deadline and resource absence is classified by exit status and empty output, never by error text.
+
+### Recovery evidence limits
+
+This adapter reads a worker only through the claim's `status.sandbox.name`, which yields two cases it cannot resolve:
+
+- The controller may bind a sandbox between a status read and the delete, so one empty status snapshot does not prove that no worker was assigned.
+- A failed create request looks identical whether the server rejected it or accepted it, bound a worker and lost the response; once the claim is absent its status can no longer be read.
+
+An attempt whose worker was never observed stays recovery-pending with an explicit error, and its ClaimID is not reused. If the claim still exists, recovery leaves it in place so a later retry can read a late binding, check ownership, and confirm cleanup. If the claim has disappeared before any worker identity was learned, this adapter cannot resolve the attempt automatically. Enumerating sandboxes through verified owner references or equivalent correlation is a promotion requirement for that case.
+
+A worker that the controller assigns to a second claim while it still belongs to a first one is a conflict: the second attempt fails closed and its upstream claim is deliberately left in place, because deleting it under `shutdownPolicy: Delete` can destroy the worker the first claim is still using. This check applies to normal binding, initial compensation, and recovery retries, including identities already saved by an earlier recovery. Such an attempt is terminal and needs operator intervention.
+
+Recovery retains its worker reservation across deletion failures and until release is confirmed, preventing another local allocation from acquiring a worker still being removed. These reservations do not expose a usable allocation identity through Observe, Start, Terminate, or Cleanup. A changed or missing binding on a retained claim also stops recovery before deletion.
 
 ## Known Gaps
 
@@ -24,6 +51,7 @@ The path was exercised with Agent Sandbox v0.4.6 on a local kind cluster. It mus
 4. The spike is only accurate for the validated single-pool path.
 5. `Claim()` returns status but not the original claim spec.
 6. Gateway transport, claim identity, external-egress controls, and durable facts are not integrated with the Kubernetes path.
+7. Workers cannot be enumerated independently of their claim, so if the claim disappears before the worker is observed, its release cannot be confirmed and non-allocation cannot be proven.
 
 ## Integration Gate
 
@@ -45,6 +73,7 @@ Run:
 Before describing this as a supported backend:
 
 - preserve terminal claim state across adapter restart;
+- enumerate workers independently of the claim (owner reference or label selector) so recovery can confirm release without a prior status observation;
 - return complete claim identity/spec data;
 - calculate per-pool status correctly;
 - run the applicable shared contract cases;

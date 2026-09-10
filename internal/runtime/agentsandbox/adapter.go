@@ -17,9 +17,10 @@ import (
 var _ runtime.RuntimeBackend = (*SpikeAdapter)(nil)
 
 const (
-	defaultBindTimeout  = 60 * time.Second
-	defaultStartTimeout = 120 * time.Second
-	pollInterval        = 1 * time.Second
+	defaultBindTimeout    = 60 * time.Second
+	defaultStartTimeout   = 120 * time.Second
+	defaultCleanupTimeout = 60 * time.Second
+	pollInterval          = 1 * time.Second
 )
 
 // SpikeAdapter is a spike RuntimeBackend that drives the upstream
@@ -29,12 +30,21 @@ const (
 // Semantic gaps relative to the in-memory reference backend are documented
 // in doc.go and should be reviewed before any production promotion.
 type SpikeAdapter struct {
-	kube kubectlRunner
+	kube      kubeClient
+	namespace string
 
 	mu       sync.Mutex
 	pools    map[string]poolEntry  // Agenova pool name -> upstream resource names
 	claims   map[string]claimEntry // claim name -> local tracking state
 	poolRefs map[string]string     // Agenova template name -> upstream sandboxtemplate name
+
+	// Reduced-contract allocation bookkeeping (see allocation.go).
+	allocations map[string]*allocationEntry // ClaimID -> allocation attempt/state
+	byWorker    map[string]string           // upstream sandbox name -> bound or recovering ClaimID
+
+	bindTimeout    time.Duration
+	cleanupTimeout time.Duration
+	pollInterval   time.Duration
 }
 
 type poolEntry struct {
@@ -56,11 +66,21 @@ type claimEntry struct {
 // New returns a SpikeAdapter configured for the given kubectl context and
 // Kubernetes namespace.
 func New(kubeContext, namespace string) *SpikeAdapter {
+	return newSpikeAdapter(newKubectlRunner(kubeContext, namespace), namespace)
+}
+
+func newSpikeAdapter(kube kubeClient, namespace string) *SpikeAdapter {
 	return &SpikeAdapter{
-		kube:     kubectlRunner{context: kubeContext, namespace: namespace},
-		pools:    make(map[string]poolEntry),
-		claims:   make(map[string]claimEntry),
-		poolRefs: make(map[string]string),
+		kube:           kube,
+		namespace:      namespace,
+		pools:          make(map[string]poolEntry),
+		claims:         make(map[string]claimEntry),
+		poolRefs:       make(map[string]string),
+		allocations:    make(map[string]*allocationEntry),
+		byWorker:       make(map[string]string),
+		bindTimeout:    defaultBindTimeout,
+		cleanupTimeout: defaultCleanupTimeout,
+		pollInterval:   pollInterval,
 	}
 }
 
@@ -78,7 +98,7 @@ func (a *SpikeAdapter) AddTemplate(template v1alpha1.AgentSandboxTemplate) error
 	obj := upstreamSandboxTemplate{
 		APIVersion: apiVersionExtensions,
 		Kind:       kindSandboxTemplate,
-		Metadata:   upstreamMeta{Name: upstreamName, Namespace: a.kube.namespace},
+		Metadata:   upstreamMeta{Name: upstreamName, Namespace: a.namespace},
 		Spec: upstreamSandboxTemplateSpec{
 			PodTemplate: upstreamPodTemplate{
 				Spec: upstreamPodSpec{
@@ -131,7 +151,7 @@ func (a *SpikeAdapter) AddWarmPool(pool v1alpha1.SandboxWarmPool) error {
 	obj := upstreamSandboxWarmPool{
 		APIVersion: apiVersionExtensions,
 		Kind:       kindSandboxWarmPool,
-		Metadata:   upstreamMeta{Name: upstreamPoolName, Namespace: a.kube.namespace},
+		Metadata:   upstreamMeta{Name: upstreamPoolName, Namespace: a.namespace},
 		Spec: upstreamSandboxWarmPoolSpec{
 			Replicas:           pool.Spec.Replicas,
 			SandboxTemplateRef: upstreamNameRef{Name: upstreamTemplateName},
@@ -172,6 +192,10 @@ func (a *SpikeAdapter) AddClaim(claim runtime.BackendClaim) error {
 		a.mu.Unlock()
 		return fmt.Errorf("claim already exists: %s", claim.Metadata.Name)
 	}
+	if _, exists := a.allocations[claim.Metadata.Name]; exists {
+		a.mu.Unlock()
+		return fmt.Errorf("claim already allocated through the backend contract: %s", claim.Metadata.Name)
+	}
 	pool, ok := a.pools[claim.Spec.PoolRef]
 	a.mu.Unlock()
 	if !ok {
@@ -179,23 +203,9 @@ func (a *SpikeAdapter) AddClaim(claim runtime.BackendClaim) error {
 	}
 
 	upstreamClaimName := resourceName("claim", claim.Metadata.Name)
-	ttl := int32(300) // 5-minute spike TTL; real production would read from claim input.
-	obj := upstreamSandboxClaim{
-		APIVersion: apiVersionExtensions,
-		Kind:       kindSandboxClaim,
-		Metadata:   upstreamMeta{Name: upstreamClaimName, Namespace: a.kube.namespace},
-		Spec: upstreamSandboxClaimSpec{
-			SandboxTemplateRef: upstreamNameRef{Name: pool.upstreamTemplateName},
-			Warmpool:           pool.upstreamPoolName,
-			Lifecycle: &upstreamSandboxClaimLifecycle{
-				ShutdownPolicy:          "Delete",
-				TTLSecondsAfterFinished: &ttl,
-			},
-		},
-	}
-	manifest, err := json.Marshal(obj)
+	manifest, err := a.claimManifest(upstreamClaimName, pool)
 	if err != nil {
-		return fmt.Errorf("marshal sandbox claim: %w", err)
+		return err
 	}
 	if err := a.kube.applyBytes(manifest); err != nil {
 		return fmt.Errorf("apply sandbox claim %q: %w", upstreamClaimName, err)
@@ -406,6 +416,29 @@ func (a *SpikeAdapter) PoolStatus(name string) (v1alpha1.SandboxWarmPoolStatus, 
 }
 
 // --- helpers ---
+
+// claimManifest renders the upstream SandboxClaim for one Agenova claim.
+func (a *SpikeAdapter) claimManifest(upstreamClaimName string, pool poolEntry) ([]byte, error) {
+	ttl := int32(300) // 5-minute spike TTL; real production would read from claim input.
+	obj := upstreamSandboxClaim{
+		APIVersion: apiVersionExtensions,
+		Kind:       kindSandboxClaim,
+		Metadata:   upstreamMeta{Name: upstreamClaimName, Namespace: a.namespace},
+		Spec: upstreamSandboxClaimSpec{
+			SandboxTemplateRef: upstreamNameRef{Name: pool.upstreamTemplateName},
+			Warmpool:           pool.upstreamPoolName,
+			Lifecycle: &upstreamSandboxClaimLifecycle{
+				ShutdownPolicy:          "Delete",
+				TTLSecondsAfterFinished: &ttl,
+			},
+		},
+	}
+	manifest, err := json.Marshal(obj)
+	if err != nil {
+		return nil, fmt.Errorf("marshal sandbox claim: %w", err)
+	}
+	return manifest, nil
+}
 
 func (a *SpikeAdapter) requirePhase(name string, from ...v1alpha1.ClaimPhase) error {
 	a.mu.Lock()

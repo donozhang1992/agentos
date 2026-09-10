@@ -61,8 +61,9 @@ Out of scope:
 
 ## Execution Todo
 
-- [ ] Record human approval of this Task + Spec + Design and the independent Reviewer in Ticket #30; recheck the merged baseline and producer types.
-- [ ] Slice 1: implement the approved reduced interface and in-memory support, reusable behavioral cases, and the minimum compiling consumer/adapter migration. Keep the existing Authorize behavior. Run focused contract and consumer gates, then the repository gate before expanding.
+- [x] Record human approval of this Task + Spec + Design in Ticket #30 and recheck the merged baseline and producer types: approved by the Owner at commit 016989e ([Ticket #30 comment](https://github.com/wunderforge/agenova/issues/30#issuecomment-5610181744)); implementation baseline is 016989e merged with main b060842 (Ticket #26 PolicyBundle), which left the #30 packet and the Ticket #25 producer types unchanged.
+- [ ] Record the independent Reviewer for this Ticket in Ticket #30 (not yet named in the approval comment).
+- [x] Slice 1: implement the approved reduced interface and in-memory support, reusable behavioral cases, and the minimum compiling consumer/adapter migration. Keep the existing Authorize behavior. Run focused contract and consumer gates, then the repository gate before expanding.
 - [ ] Slice 2: complete fault-path cases, audit adapter mappings/unsupported operations, and preserve relocated pool-specific regression tests. Capture real backend output for changed provider claims or record the exact environment blocker.
 - [ ] Slice 3: review the full diff and validation evidence, document the accepted operation/type surface for Ticket #31, and obtain human acceptance before merge.
 
@@ -91,7 +92,9 @@ Out of scope:
 
 ## Decisions and Blockers
 
-- LOCAL PROPOSAL v1, not approved implementation context. Created with the canonical generator using Task + Spec + Design because shared semantics, backend mapping and consumer compatibility need one concrete decision.
+- Slice 1 local evidence (2026-09-10): `go build ./...`, both focused commands above, `go test -count=1 -race ./...`, and `pwsh -File scripts/check.ps1 -All` all exited 0. The three recovery-identity review regressions also passed unchanged with the race detector. Six pool-specific reference regressions remain in operator tests; gateway authorization behavior is unchanged. This completes the local implementation slice, not final Ticket acceptance or real-backend verification.
+- Adapter recovery checks and reserves the worker identity in both normal binding and every compensation/retry path. Conflicts retain their upstream claim without deletion. Unknown workers also retain the claim so a later retry can learn its binding; a claim that disappeared before its worker was observed remains an explicit recovery blocker. Failed cleanup keeps the reservation without exposing it as a usable allocation. Formal tests cover the three conflict entries, late binding, changed binding, failed-delete retries, and concurrent binding during recovery.
+- Planning approved at commit 016989e; the approval keeps backend operations separate from application lifecycle/outcome, preserves provider neutrality, requires unsupported Agent Sandbox start semantics to be reported honestly, and treats existing parent-claim gateway tests as compatibility regressions only. Created with the canonical generator using Task + Spec + Design because shared semantics, backend mapping and consumer compatibility need one concrete decision.
 - Inspected main: 3365cd0e37d181146dd5b6f8e65a58e03b6fb39e; remote main matched at inspection. Ticket #25 is closed, so the declared upstream Ticket dependency is satisfied; this is not implementation approval.
 - Proposed approach is specified in design.md. Approval must cover the backend/application split and compatibility strategy; exact implementation names may vary without changing the accepted semantics.
 - RuntimeBackend.Claim is not retained as the future source of governance authority merely to avoid a consumer migration. Ticket #30 preserves the current internal claim view through a narrow compatibility dependency; Ticket #31 owns the authoritative run-service view and publication semantics.

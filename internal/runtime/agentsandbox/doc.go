@@ -15,9 +15,12 @@
 // contract in five ways discovered during the adapter spike:
 //
 //  1. No phase field. Upstream SandboxClaim uses k8s-standard conditions
-//     (status.conditions), not a phase string. The adapter maps conditions to
-//     Agenova phases; BindClaim and StartClaim poll for controller-driven
-//     transitions rather than triggering them directly.
+//     (status.conditions), not a phase string. The legacy spike methods map
+//     conditions to Agenova phases; BindClaim and StartClaim poll for
+//     controller-driven transitions rather than triggering them directly.
+//     Under the reduced RuntimeBackend contract (allocation.go) readiness is
+//     Bound-level evidence only, and Start/Terminate are reported as
+//     unsupported instead of being inferred from readiness or deletion.
 //
 //  2. No SucceedClaim / FailClaim primitives. The upstream controller manages
 //     sandbox termination through pod lifecycle and lifecycle.shutdownPolicy.
