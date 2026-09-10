@@ -292,8 +292,24 @@ func (a *SpikeAdapter) Cleanup(id v1alpha1.SandboxClaimBackendIdentity) (runtime
 		result.Released = true
 		return result, nil
 	}
-	if err := a.kube.delete("sandboxclaims", entry.upstreamClaimName); err != nil {
-		return result, fmt.Errorf("cleanup %s: delete claim: %w", entry.claimID, err)
+	// A stale identity must not delete a claim now bound to another worker:
+	// shutdownPolicy Delete could destroy that worker even though our later
+	// release check still uses the original worker. Recheck before deletion.
+	present, err := a.kube.exists("sandboxclaims", entry.upstreamClaimName)
+	if err != nil {
+		return result, fmt.Errorf("cleanup %s: check claim: %w", entry.claimID, err)
+	}
+	if present {
+		var sc upstreamSandboxClaim
+		if err := a.kube.get("sandboxclaims", entry.upstreamClaimName, &sc); err != nil {
+			return result, fmt.Errorf("cleanup %s: read claim binding: %w", entry.claimID, err)
+		}
+		if sc.Status.Sandbox == nil || sc.Status.Sandbox.Name != id.WorkerID {
+			return result, fmt.Errorf("cleanup %s: %w: refusing to delete claim %s without its recorded worker %s", entry.claimID, errIdentityMismatch, entry.upstreamClaimName, id.WorkerID)
+		}
+		if err := a.kube.delete("sandboxclaims", entry.upstreamClaimName); err != nil {
+			return result, fmt.Errorf("cleanup %s: delete claim: %w", entry.claimID, err)
+		}
 	}
 	// entry is allocBound here, so its worker was observed and its release is
 	// confirmable.

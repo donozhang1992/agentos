@@ -65,7 +65,8 @@ Out of scope:
 - [ ] Record the independent Reviewer for this Ticket in Ticket #30 (not yet named in the approval comment).
 - [x] Slice 1: implement the approved reduced interface and in-memory support, reusable behavioral cases, and the minimum compiling consumer/adapter migration. Keep the existing Authorize behavior. Run focused contract and consumer gates, then the repository gate before expanding.
 - [x] Slice 2: complete fault-path cases, audit adapter mappings/unsupported operations, and preserve relocated pool-specific regression tests. Capture real backend output for changed provider claims or record the exact environment blocker.
-- [ ] Slice 3: review the full diff and validation evidence, document the accepted operation/type surface for Ticket #31, and obtain human acceptance before merge.
+- [x] Slice 3 technical work: review the full diff and validation evidence, correct the reproduced cleanup-binding issue, and document the operation/type surface in the [#31 handoff](handoff-0031.md). See [review.md](review.md).
+- [ ] Slice 3 acceptance: obtain independent human review and final acceptance before merge; record the decision in Ticket #30 / PR #106.
 
 ## Quality Gates
 
@@ -91,6 +92,8 @@ Out of scope:
 - Local proposal links must be converted to repository-relative links and checked before a planning PR is published.
 
 ## Decisions and Blockers
+
+- Slice 3 review found that normal adapter Cleanup also needed the binding check already used by observation/recovery. The fix rejects changed, missing or unreadable bindings before deletion, retains identity on failure, and is covered by four regression variants. The [handoff](handoff-0031.md) records exact types, operation semantics, compatibility, serial reference usage and the responsibilities retained by #31. Build, both focused groups, full race and all 12 repository checks passed after the fix. Technical review/handoff are complete; human acceptance remains pending.
 
 - Slice 2 local evidence (2026-09-10): twelve shared contract cases now include resource-start, termination, replacement, and implicit-termination failures with retries. Build, both focused groups, full race, the repository baseline, and integration-package compilation passed. The six legacy reference pool cases are unchanged. See [contract evidence](../../docs/evidence/30/reference-contract/summary.md), [repository evidence](../../docs/evidence/30/repository-baseline/summary.md), and the [real-backend blocker](../../docs/evidence/30/agent-sandbox/summary.md). The no-context integration guard rejects execution before contacting a cluster; this guard is not real-backend evidence.
 - Slice 1 local evidence (2026-09-10): `go build ./...`, both focused commands above, `go test -count=1 -race ./...`, and `pwsh -File scripts/check.ps1 -All` all exited 0. The three recovery-identity review regressions also passed unchanged with the race detector. Six pool-specific reference regressions remain in operator tests; gateway authorization behavior is unchanged. This completes the local implementation slice, not final Ticket acceptance or real-backend verification.

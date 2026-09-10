@@ -4,7 +4,7 @@
 - Gate: Agent Sandbox integration
 - Date: 2026-09-10
 - Branch: `tomtian/e3-t1-runtime-backend-mvp`
-- Implementation baseline: `a72baf9d1ee228fb88717e56d5f69c96847264f5`; Slice 2 changes migrate the integration gate to the reduced contract.
+- Current candidate: `91977b83e92faaa2cde39388e3f9b44684714151` plus the final cleanup-binding fix, pinned by the [source manifest](../reference-contract/source-sha256.txt). The integration gate uses the reduced contract.
 - Command to run on an available test environment: `pwsh -File scripts/check.ps1 -Integration -KubeContext <explicitly-confirmed-test-context>`
 - Result: **blocked, not run**. The executable probe returned no kubectl binary, and the Owner has not confirmed a test context.
 - Probe output: [output.txt](output.txt).

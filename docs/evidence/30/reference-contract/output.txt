@@ -1,6 +1,3 @@
-Command: ['go', 'test', '-count=1', '-v', './internal/operator/...', './internal/runtime/...']
-Exit: 0
-
 === RUN   TestRuntimeBackendContract
 === RUN   TestRuntimeBackendContract/allocate_returns_resolvable_identity
 === RUN   TestRuntimeBackendContract/golden_path_allocate_observe_start_terminate_cleanup
@@ -52,7 +49,7 @@ Exit: 0
 === RUN   TestReferencePoolLifecycle_invalidTransitionsRemainRejected
 --- PASS: TestReferencePoolLifecycle_invalidTransitionsRemainRejected (0.00s)
 PASS
-ok  	github.com/wunderforge/agenova/internal/operator	0.975s
+ok  	github.com/wunderforge/agenova/internal/operator	0.478s
 ?   	github.com/wunderforge/agenova/internal/runtime	[no test files]
 === RUN   TestLegacyStartClaim_doesNotGrantRunningFromReadiness
 --- PASS: TestLegacyStartClaim_doesNotGrantRunningFromReadiness (0.00s)
@@ -112,16 +109,26 @@ ok  	github.com/wunderforge/agenova/internal/operator	0.975s
 --- PASS: TestCleanup_queryFailureIsNotReleaseEvidence (0.00s)
 === RUN   TestCleanup_deleteFailureReturnsIdentityAndNoRelease
 --- PASS: TestCleanup_deleteFailureReturnsIdentityAndNoRelease (0.00s)
+=== RUN   TestCleanup_validatesCurrentBindingBeforeDelete
+=== RUN   TestCleanup_validatesCurrentBindingBeforeDelete/different_worker
+=== RUN   TestCleanup_validatesCurrentBindingBeforeDelete/missing_binding
+=== RUN   TestCleanup_validatesCurrentBindingBeforeDelete/empty_worker
+=== RUN   TestCleanup_validatesCurrentBindingBeforeDelete/read_failure
+--- PASS: TestCleanup_validatesCurrentBindingBeforeDelete (0.00s)
+    --- PASS: TestCleanup_validatesCurrentBindingBeforeDelete/different_worker (0.00s)
+    --- PASS: TestCleanup_validatesCurrentBindingBeforeDelete/missing_binding (0.00s)
+    --- PASS: TestCleanup_validatesCurrentBindingBeforeDelete/empty_worker (0.00s)
+    --- PASS: TestCleanup_validatesCurrentBindingBeforeDelete/read_failure (0.00s)
 === RUN   TestReducedContractSupportMatrix
-    allocation_test.go:635: support matrix: Allocate=supported Observe=supported(readiness only) Start=unsupported Terminate=unsupported Cleanup=supported(release; replacement not observable); real-cluster evidence=blocked (no verified kube context)
+    allocation_test.go:681: support matrix: Allocate=supported Observe=supported(readiness only) Start=unsupported Terminate=unsupported Cleanup=supported(release; replacement not observable); real-cluster evidence=blocked (no verified kube context)
 --- PASS: TestReducedContractSupportMatrix (0.00s)
 === RUN   TestAllocate_recoveryIdentityConflictProtectsExistingWorker
 === RUN   TestAllocate_recoveryIdentityConflictProtectsExistingWorker/apply-response-error
-    allocation_test.go:668: path=apply-response-error result=allocation second failed: apply sandbox claim "agenova-claim-second": response lost after server accepted and bound second claim; recovery refused for second: agentsandbox: upstream worker already associated with another claim: upstream worker shared-worker is already associated with claim first; upstream claim agenova-claim-second was left in place to protect it deletes=0 first-worker-present=true
+    allocation_test.go:714: path=apply-response-error result=allocation second failed: apply sandbox claim "agenova-claim-second": response lost after server accepted and bound second claim; recovery refused for second: agentsandbox: upstream worker already associated with another claim: upstream worker shared-worker is already associated with claim first; upstream claim agenova-claim-second was left in place to protect it deletes=0 first-worker-present=true
 === RUN   TestAllocate_recoveryIdentityConflictProtectsExistingWorker/bind-status-error
-    allocation_test.go:668: path=bind-status-error result=allocation second failed: get claim status: temporary bind status query failure; recovery refused for second: agentsandbox: upstream worker already associated with another claim: upstream worker shared-worker is already associated with claim first; upstream claim agenova-claim-second was left in place to protect it deletes=0 first-worker-present=true
+    allocation_test.go:714: path=bind-status-error result=allocation second failed: get claim status: temporary bind status query failure; recovery refused for second: agentsandbox: upstream worker already associated with another claim: upstream worker shared-worker is already associated with claim first; upstream claim agenova-claim-second was left in place to protect it deletes=0 first-worker-present=true
 === RUN   TestAllocate_recoveryIdentityConflictProtectsExistingWorker/resumed-recovery
-    allocation_test.go:668: path=resumed-recovery result=allocation second retry: recovery refused for second: agentsandbox: upstream worker already associated with another claim: upstream worker shared-worker is already associated with claim first; upstream claim agenova-claim-second was left in place to protect it deletes=0 first-worker-present=true
+    allocation_test.go:714: path=resumed-recovery result=allocation second retry: recovery refused for second: agentsandbox: upstream worker already associated with another claim: upstream worker shared-worker is already associated with claim first; upstream claim agenova-claim-second was left in place to protect it deletes=0 first-worker-present=true
 --- PASS: TestAllocate_recoveryIdentityConflictProtectsExistingWorker (0.00s)
     --- PASS: TestAllocate_recoveryIdentityConflictProtectsExistingWorker/apply-response-error (0.00s)
     --- PASS: TestAllocate_recoveryIdentityConflictProtectsExistingWorker/bind-status-error (0.00s)
@@ -153,5 +160,5 @@ ok  	github.com/wunderforge/agenova/internal/operator	0.975s
 === RUN   TestExecKubectl_killsHungSubprocess
 --- PASS: TestExecKubectl_killsHungSubprocess (0.15s)
 PASS
-ok  	github.com/wunderforge/agenova/internal/runtime/agentsandbox	1.916s
+ok  	github.com/wunderforge/agenova/internal/runtime/agentsandbox	1.693s
 ?   	github.com/wunderforge/agenova/internal/runtime/contracttest	[no test files]

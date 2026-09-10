@@ -2,11 +2,11 @@
 
 - Ticket: [#30](https://github.com/wunderforge/agenova/issues/30)
 - Feature spec: [spec.md](spec.md)
-- Status: Proposed approach, subject to human planning approval.
+- Status: approach approved at `016989e` in the [Owner decision](https://github.com/wunderforge/agenova/issues/30#issuecomment-5610181744). This design records the planning baseline; exact implemented types and limits are in [the #31 handoff](handoff-0031.md). Final implementation acceptance remains pending.
 
-## Current State and Constraints
+## Planning Baseline and Constraints
 
-RuntimeBackend currently requires AddTemplate, AddWarmPool, AddClaim, BindClaim, StartClaim, SucceedClaim, FailClaim, ExpireClaim, Claim and PoolStatus. It mixes pool setup, application outcomes and infrastructure operations. The reusable suite requires pool replacement/count behavior, so changing only method names would preserve the wrong boundary.
+At the planning baseline, RuntimeBackend required AddTemplate, AddWarmPool, AddClaim, BindClaim, StartClaim, SucceedClaim, FailClaim, ExpireClaim, Claim and PoolStatus. It mixes pool setup, application outcomes and infrastructure operations. The reusable suite requires pool replacement/count behavior, so changing only method names would preserve the wrong boundary.
 
 The operator is the in-memory reference implementation. The Agent Sandbox spike also implements the interface and stores synthetic claim phases locally. Tool/Model gateways depend on the entire interface but only read Claim. The app/CLI factories and E2E tests also reference the contract. Ticket #25 already separated public issued state from internal BackendClaim; preserve that distinction.
 

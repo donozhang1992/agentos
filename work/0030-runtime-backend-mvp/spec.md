@@ -2,7 +2,7 @@
 
 - Ticket: [#30](https://github.com/wunderforge/agenova/issues/30)
 - PRD outcome: [Backend-neutral execution](../../docs/product/prd.md#3-backend-neutral-execution)
-- Status: Local proposal for review, not an accepted cross-team interface.
+- Status: planning boundary approved at `016989e` in the [Owner decision](https://github.com/wunderforge/agenova/issues/30#issuecomment-5610181744). The implemented surface is documented in [the #31 handoff](handoff-0031.md); final implementation acceptance remains pending.
 
 ## Intent
 
@@ -49,6 +49,6 @@ Application lifecycle code requests backend operations and interprets their evid
 
 ## Open Decisions
 
-- Approve the operation boundary and compatibility approach in design.md; if a maintainer requires retaining a legacy method in the shared interface, explain which Ticket outcome requires it.
+- The operation boundary and compatibility approach were approved. Independent implementation review must still verify the final Go surface and compatibility evidence before downstream adoption.
 - Ticket #31 must select its authoritative claim read/publication boundary. The current compatibility view is not a promise that backend observation supplies future authority.
 - Real Agent Sandbox support depends on the adapter's actual capabilities and environment evidence. Unsupported start/termination semantics are documented gaps, not invented platform behavior.

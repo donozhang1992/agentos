@@ -607,6 +607,52 @@ func TestCleanup_deleteFailureReturnsIdentityAndNoRelease(t *testing.T) {
 	}
 }
 
+func TestCleanup_validatesCurrentBindingBeforeDelete(t *testing.T) {
+	for _, name := range []string{"different worker", "missing binding", "empty worker", "read failure"} {
+		t.Run(name, func(t *testing.T) {
+			k := newFakeKube()
+			k.bindOnApply = "first-worker"
+			a := newTestAdapter(k)
+			first := allocateOK(t, a, "first")
+			k.bindOnApply = "second-worker"
+			second := allocateOK(t, a, "second")
+			sc := k.claims[resourceName("claim", "first")]
+			want := errIdentityMismatch
+			switch name {
+			case "different worker":
+				sc.Status.Sandbox = &upstreamSandboxRef{Name: second.Identity.WorkerID}
+			case "missing binding":
+				sc.Status.Sandbox = nil
+			case "empty worker":
+				sc.Status.Sandbox = &upstreamSandboxRef{}
+			case "read failure":
+				want = errors.New("binding query unavailable")
+				k.getErr = want
+			}
+
+			res, err := a.Cleanup(first.Identity)
+			if !errors.Is(err, want) || res.Identity != first.Identity || res.Released || res.Replaced {
+				t.Errorf("unverified binding must reject cleanup with identity intact: %+v %v", res, err)
+			}
+			if k.delets != 0 || !k.sandboxes[first.Identity.WorkerID] || !k.sandboxes[second.Identity.WorkerID] {
+				t.Fatalf("unverified binding caused destructive cleanup: deletes=%d first=%t second=%t", k.delets, k.sandboxes[first.Identity.WorkerID], k.sandboxes[second.Identity.WorkerID])
+			}
+			if a.isReleased(a.allocations["first"]) {
+				t.Fatal("unverified cleanup was recorded as released")
+			}
+
+			// A later retry may proceed only after the original binding can
+			// be verified again. The other allocation remains untouched.
+			k.getErr = nil
+			sc.Status.Sandbox = &upstreamSandboxRef{Name: first.Identity.WorkerID}
+			res, err = a.Cleanup(first.Identity)
+			if err != nil || !res.Released || !k.sandboxes[second.Identity.WorkerID] {
+				t.Fatalf("retry after binding verification: %+v %v", res, err)
+			}
+		})
+	}
+}
+
 // TestReducedContractSupportMatrix documents, per operation, what this spike
 // adapter supports against a simulated controller. It is NOT the reference
 // contract suite: Start and Terminate are unsupported by design and real

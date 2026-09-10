@@ -1,4 +1,2 @@
-Command: ['go', 'test', '-count=1', '-tags', 'integration', '-run', '^$', './harness/integration/agentsandbox/']
-Exit: 0
-
-ok  	github.com/wunderforge/agenova/harness/integration/agentsandbox	1.096s [no tests to run]
+ok  	github.com/wunderforge/agenova/harness/integration/agentsandbox	0.466s [no tests to run]
+[pass] Agent Sandbox integration package compiles

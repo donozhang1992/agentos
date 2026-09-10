@@ -26,7 +26,7 @@ Support of the five reduced operations against the upstream controller, verified
 | Observe | supported (readiness only) | `Ready` mirrors the upstream `Ready=True` condition, and only when the claim still carries the recorded worker; a different or missing worker is reported as an identity mismatch. Replacement is not observable and stays `false`. Query failures are returned as errors. |
 | Start | unsupported | The controller starts the pod on its own; there is no channel to acknowledge actual work start. |
 | Terminate | unsupported | No worker-stop evidence exists apart from resource deletion. |
-| Cleanup | supported (release) | `Released` is reported only after both the claim and the assigned sandbox are confirmed absent; timeouts and query failures are explicit errors and the call is retryable. |
+| Cleanup | supported (release) | Rechecks the recorded worker binding before deletion; changed/missing bindings or query failures prevent deletion. `Released` is reported only after both the claim and the assigned sandbox are confirmed absent; failures are explicit and retryable after identity/release can be confirmed. |
 
 `kubectl` invocations carry a per-command deadline and resource absence is classified by exit status and empty output, never by error text.
 
@@ -42,6 +42,8 @@ An attempt whose worker was never observed stays recovery-pending with an explic
 A worker that the controller assigns to a second claim while it still belongs to a first one is a conflict: the second attempt fails closed and its upstream claim is deliberately left in place, because deleting it under `shutdownPolicy: Delete` can destroy the worker the first claim is still using. This check applies to normal binding, initial compensation, and recovery retries, including identities already saved by an earlier recovery. Such an attempt is terminal and needs operator intervention.
 
 Recovery retains its worker reservation across deletion failures and until release is confirmed, preventing another local allocation from acquiring a worker still being removed. These reservations do not expose a usable allocation identity through Observe, Start, Terminate, or Cleanup. A changed or missing binding on a retained claim also stops recovery before deletion.
+
+The binding check and deletion are separate kubectl requests, not an atomic upstream identity precondition. The spike assumes the binding/resource name remains stable between them. Production promotion needs verified immutable identity/precondition handling and real-cluster evidence for concurrent resource changes.
 
 ### Legacy compatibility audit (Ticket #30)
 
