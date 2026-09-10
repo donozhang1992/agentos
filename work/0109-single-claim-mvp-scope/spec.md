@@ -22,6 +22,7 @@ The committed MVP proves one governed agent assignment from request through evid
 
 - Given the committed MVP documentation and issue graph, when a contributor follows the critical path, then no parent/child ticket is required to complete the governed single-claim vertical slice.
 - Given two independent claims, when facts are recorded or queried, then each fact remains attributable to exactly one claim without requiring a lineage model.
+- Given a governed invocation, when its caller-supplied target differs from the claim bound to the system-established worker context, then the invocation is denied without an external call or fabricated invocation fact.
 - Given future parent/child work, when it is revisited, then it requires explicit reprioritization and must remain governance scope rather than workflow scheduling.
 
 ## Negative Cases
@@ -32,6 +33,7 @@ The committed MVP proves one governed agent assignment from request through evid
 ## Compatibility
 
 - Existing single-claim public contracts, lifecycle behavior, gateway authorization, fact attribution, and experimental parent/child reference tests remain source-compatible.
+- The trusted-context rule states a required security property, not a production workload-identity implementation or new public identity schema.
 - Optional future lineage fields may be added later only through an approved contract change; current consumers cannot require or fabricate them.
 
 ## Open Decisions
