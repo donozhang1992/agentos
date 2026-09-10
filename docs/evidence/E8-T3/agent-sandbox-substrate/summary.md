@@ -1,35 +1,49 @@
 # Evidence Summary
 
-- Ticket: E8-T3 (#50), PR #99 remediation
+- Ticket: E8-T3 (#50)
 - Gate: agent-sandbox-substrate
-- Date: 2026-09-09
-- Branch: codex/e8-t3-pr99-unblock
-- Base commit: b031f6a10a450f71aea48a3931ab582dc8a6f4bb
-- Verified script commit: f76a2b05c3f761b90afa638b1cd8f7eea1fb6fbf (clean working tree)
-- Script SHA256: 9f53fe05c0a491ad07caecf9b58efc18d411c59f0be590826f30953c078c4f91
-- Command: `bash harness/spike/agent-sandbox-substrate/reproduce.sh up --capture`
-- Result: **blocked** — Docker is unavailable on the Windows repair machine.
-- Upstream target: Agent Sandbox v0.4.6 / extensions.agents.x-k8s.io/v1alpha1
+- Date: 2026-09-10
+- Branch / commit: neo/e8-t3-kind-agent-sandbox / dab25fd (run below used identical script content)
+- Command: `bash harness/spike/agent-sandbox-substrate/reproduce.sh all --capture`
+- Host: Darwin arm64, Docker Desktop, existing Homebrew `kind v0.32.0` + `kubectl v1.36.2` (both resolved as `existing`)
+- Upstream target: Agent Sandbox **v0.4.6** / `extensions.agents.x-k8s.io/v1alpha1`
+- Result: **partial — blocked at controller image pull by this network's TLS interception, not by the substrate or the script**
 
-The old Darwin capture at adf4d76 predates the final script and is superseded.
-Its summary/output are recoverable from Git history; they do not prove the repair.
+## What the real run proved (`output.txt`)
 
-The isolated command-double gate and repository baseline are separate from
-real-backend acceptance. The baseline passed (including integration compilation);
-no actual integration or race run was performed on this machine. Go emitted a
-telemetry-cache permission warning, but the baseline exited 0.
+- `kind` and `kubectl` resolved from `PATH` as `existing` and recorded; nothing downloaded.
+- Disposable `kind` cluster `agenova-k8s-lab` created (`kindest/node:v1.36.1`), control-plane Ready in ~19s.
+- Kube context verified as `kind-agenova-k8s-lab` before any mutation (re-checked before each apply).
+- Ownership receipt (Docker control-plane container ID + `kube-system` UID) written to `.tmp/agenova-k8s-lab-owner/identity` and re-verified.
+- Pinned Agent Sandbox v0.4.6 `manifest.yaml` downloaded and applied: `agent-sandbox-system` namespace, controller ServiceAccount / ClusterRole / ClusterRoleBinding / Service / Deployment, and CRD `sandboxes.agents.x-k8s.io` all created.
+- Scoped teardown proven separately (`reproduce.sh down`): re-verified context + the ownership receipt, deleted **only** `agenova-k8s-lab` (unrelated local `kind` clusters untouched), and removed the receipt.
 
-| Check | Command | Result |
-| --- | --- | --- |
-| Bash syntax | `bash -n harness/spike/agent-sandbox-substrate/reproduce.sh` | pass |
-| Isolated regressions | `bash harness/spike/agent-sandbox-substrate/test-reproduce.sh` | pass, 15 scenarios |
-| Repository baseline | `pwsh -NoProfile -File scripts/check.ps1 -All` | pass |
-| Actual prerequisites from committed script | `bash harness/spike/agent-sandbox-substrate/reproduce.sh up --capture` | exit 1, Docker unavailable |
+## Blocker
 
-Before #99 can be merged as complete, run the final committed script twice with
-`all --capture` on Docker/kind and replace this blocker with one accepted capture.
-The capture must identify the actual commit, script hash, tools/server/CRD versions,
-controller readiness, claim Ready, pod/namespace cleanup and cluster deletion.
-No Agenova claim-governance or adapter proof is asserted here.
+The `agent-sandbox-controller` Deployment never reached Ready. The `kind` node's
+containerd cannot pull `registry.k8s.io/agent-sandbox/agent-sandbox-controller:v0.4.6`:
 
-Raw prerequisite result: [output.txt](output.txt).
+```
+Failed to pull image ".../agent-sandbox-controller:v0.4.6": ... failed to do request:
+Head "https://registry.k8s.io/v2/.../manifests/v0.4.6":
+tls: failed to verify certificate: x509: certificate signed by unknown authority
+```
+
+This machine's network runs TLS inspection (Zscaler). The host trusts the
+inspection CA — `docker pull` of the same image on the host succeeds — but the
+`kind` node's containerd ships its own CA bundle and does not. This is an
+environment property, not a defect in the substrate, the manifests, or
+`reproduce.sh`, which correctly reported it as a non-zero failure rather than a
+silent pass.
+
+## Required before #99 is accepted
+
+Run `reproduce.sh all --capture` **twice** on a network without TLS interception
+(or with the inspection root CA added to the `kind` node's trust store), and
+replace this file and `output.txt` with a capture that also shows: each CRD's
+served/storage versions, controller image + readiness, `SandboxClaim`
+`Ready=True`, sandbox pods -> 0 after claim/pool/template teardown, the smoke
+namespace deleted, and the owned cluster deleted. No Agenova adapter or
+claim-governance path is exercised here (that is E8-T4 / #51).
+
+Raw output: [output.txt](output.txt).

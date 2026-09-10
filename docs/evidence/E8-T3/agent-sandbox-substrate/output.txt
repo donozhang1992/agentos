@@ -1,1 +1,65 @@
-[fail] docker daemon is not reachable (start Docker Desktop / your engine and retry)
+$ bash harness/spike/agent-sandbox-substrate/reproduce.sh all --capture
+# Darwin arm64, Docker Desktop, Homebrew kind v0.32.0 + kubectl v1.36.2
+# Script content == neo/e8-t3-kind-agent-sandbox @ dab25fd (run captured before commit)
+
+[info] capturing transient evidence in .tmp/agent-sandbox-evidence.gIjnAs
+[pass] docker daemon reachable
+[pass] kind: /opt/homebrew/bin/kind (existing)
+[pass] kubectl: /opt/homebrew/bin/kubectl (existing)
+[info] creating kind cluster 'agenova-k8s-lab'
+Creating cluster "agenova-k8s-lab" ...
+ ✓ Ensuring node image (kindest/node:v1.36.1)
+ ✓ Preparing nodes
+ ✓ Writing configuration
+ ✓ Starting control-plane
+ ✓ Installing CNI
+ ✓ Installing StorageClass
+ ✓ Waiting <= 1m30s for control-plane = Ready
+ • Ready after 19s
+Set kubectl context to "kind-agenova-k8s-lab"
+[pass] resolved context matches expected 'kind-agenova-k8s-lab'
+[pass] resolved context matches expected 'kind-agenova-k8s-lab'
+[info] downloading pinned Agent Sandbox v0.4.6 manifests
+[pass] downloaded pinned manifests to .tmp/agent-sandbox-v0.4.6
+[info] applying core manifest (namespace, RBAC, Sandbox CRD, controller)
+[pass] resolved context matches expected 'kind-agenova-k8s-lab'
+namespace/agent-sandbox-system created
+serviceaccount/agent-sandbox-controller created
+clusterrolebinding.rbac.authorization.k8s.io/agent-sandbox-controller created
+service/agent-sandbox-controller created
+deployment.apps/agent-sandbox-controller created
+customresourcedefinition.apiextensions.k8s.io/sandboxes.agents.x-k8s.io created
+clusterrole.rbac.authorization.k8s.io/agent-sandbox-controller created
+Waiting for deployment "agent-sandbox-controller" rollout to finish: 0 of 1 updated replicas are available...
+error: timed out waiting for the condition
+[fail] controller did not become ready after core manifest apply
+
+# --- controller pod state at the point of failure ---
+$ kubectl --context kind-agenova-k8s-lab -n agent-sandbox-system get pods
+NAME                                        READY   STATUS             RESTARTS   AGE
+agent-sandbox-controller-5bbbfc986b-lzc8s   0/1     ImagePullBackOff   0          2m48s
+
+$ kubectl --context kind-agenova-k8s-lab -n agent-sandbox-system describe pod -l app=agent-sandbox-controller
+  Warning  Failed  kubelet  Failed to pull image
+    "registry.k8s.io/agent-sandbox/agent-sandbox-controller:v0.4.6":
+    failed to pull and unpack image ".../agent-sandbox-controller:v0.4.6":
+    failed to resolve reference ".../agent-sandbox-controller:v0.4.6":
+    failed to do request: Head "https://registry.k8s.io/v2/agent-sandbox/agent-sandbox-controller/manifests/v0.4.6":
+    tls: failed to verify certificate: x509: certificate signed by unknown authority
+  Warning  Failed  kubelet  Error: ErrImagePull
+  Normal   BackOff kubelet  Back-off pulling image ".../agent-sandbox-controller:v0.4.6"
+
+# Host `docker pull registry.k8s.io/agent-sandbox/agent-sandbox-controller:v0.4.6` succeeds
+# on the same machine: the host keychain trusts the TLS-inspection (Zscaler) CA; the kind
+# node's containerd does not. Environment issue, not a substrate/script defect.
+
+# --- scoped cleanup (run separately) ---
+$ bash harness/spike/agent-sandbox-substrate/reproduce.sh down
+[pass] kind: /opt/homebrew/bin/kind (existing)
+[pass] kubectl: /opt/homebrew/bin/kubectl (existing)
+[pass] resolved context matches expected 'kind-agenova-k8s-lab'
+[info] deleting kind cluster 'agenova-k8s-lab' (only this cluster)
+Deleting cluster "agenova-k8s-lab" ...
+Deleted nodes: ["agenova-k8s-lab-control-plane"]
+[pass] owned kind cluster 'agenova-k8s-lab' deleted
+# unrelated local kind clusters (ais-opencost-test, ais-test-multi, ais-test-multi-dev) untouched
