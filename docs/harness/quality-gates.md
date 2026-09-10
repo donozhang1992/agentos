@@ -38,7 +38,7 @@ This checks:
 - stable architecture authority and backend-neutral source boundaries without requiring the same prose in several documents;
 - integration entry-point rejection without an explicit context, tested with isolated check doubles and no cluster access;
 - Go formatting, module consistency, `go vet`, and `go test ./...`;
-- the reference multi-agent E2E included in the Go test tree.
+- all existing Go regression tests, including the experimental reference multi-agent E2E; retaining that regression does not make parent/child behavior part of the committed MVP;
 - frontend canonical binding drift and fixture parity, TypeScript checks, component/adapter tests, production build, and Chromium smoke with screenshots.
 
 Frontend prerequisites: Node.js 24, `npm --prefix ui ci`, and
@@ -76,7 +76,7 @@ The workflow alone runs the check but cannot make it mandatory.
 | --- | --- |
 | Docs or harness only | `./scripts/check.ps1 -Docs` plus rendered/manual review when layout matters |
 | Core lifecycle/API | Focused unit or contract test plus `./scripts/check.ps1 -All` |
-| Gateway/facts/lineage | Allow and deny tests plus reference E2E and `-All` |
+| Gateway/facts/evidence | Allow and deny tests plus reference E2E and `-All` |
 | Runtime adapter | Adapter unit tests, `-All`, and real backend integration output for provider claims |
 | CLI/API/UI flow | Executable smoke/E2E output; rendered evidence for UI; `-All` |
 
